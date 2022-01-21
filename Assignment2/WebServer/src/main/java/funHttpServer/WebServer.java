@@ -16,6 +16,11 @@ write a response back
 
 package funHttpServer;
 
+import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
+
 import java.io.*;
 import java.net.*;
 import java.util.ArrayList;
@@ -25,6 +30,7 @@ import java.util.Random;
 import java.util.Map;
 import java.util.LinkedHashMap;
 import java.nio.charset.Charset;
+
 
 class WebServer {
   public static void main(String args[]) {
@@ -200,57 +206,48 @@ class WebServer {
           // wrong data is given this just crashes
           Map<String, String> query_pairs = new LinkedHashMap<String, String>();
           // extract path parameters
-          try {
-            if (request.equals("multiply?")) {
-              num1 = 6;
-              num2 = 8;
-              // Generate response
-              builder.append("HTTP/1.1 400 Bad Request\n");
-              builder.append("Content-Type: text/html; charset=utf-8\n");
-              builder.append("\n");
-              builder.append("No parameters found in GET request. <br>" +
-                      "Proper format is /multiply?num1=3&num2=4 <br>" +
-                      "Using default values of 6 and 8. <br>" +
-                      "Result is: " + num1 * num2);
-            } else {
-              try {
-                query_pairs = splitQuery(request.replace("multiply?", ""));
-                if (query_pairs.size() > 2) {
-                  builder.append("HTTP/1.1 400 Bad Request\n");
-                  builder.append("Content-Type: text/html; charset=utf-8\n");
-                  builder.append("\n");
-                  builder.append("Only use 2 numbers PLEASE!");
-                } else {
-                  num1 = Integer.parseInt(query_pairs.get("num1"));
-                  num2 = Integer.parseInt(query_pairs.get("num2"));
-
-                  // Generate response
-                  builder.append("HTTP/1.1 200 OK\n");
-                  builder.append("Content-Type: text/html; charset=utf-8\n");
-                  builder.append("\n");
-                  builder.append("Result is: " + num1 * num2);
-                }
-              } catch (NumberFormatException e) {
-                num1 = 7;
-                num2 = 2;
-
-                // Generate response
-                builder.append("HTTP/1.1 400 Bad Request\n");
-                builder.append("Content-Type: text/html; charset=utf-8\n");
-                builder.append("\n");
-                builder.append("GET request parameters must be numbers. <br>" +
-                        "Proper format is /multiply?num1=3&num2=4 <br>" +
-                        "Using default values of 7 and 2. <br>" +
-                        "Result is: " + num1 * num2);
-              }
-          }
-
-          } catch (IndexOutOfBoundsException e) {
+          if (request.equals("multiply?")) {
+            num1 = 6;
+            num2 = 8;
             // Generate response
             builder.append("HTTP/1.1 400 Bad Request\n");
             builder.append("Content-Type: text/html; charset=utf-8\n");
             builder.append("\n");
-            builder.append("Proper format is /multiply?num1=3&num2=4");
+            builder.append("No parameters found in GET request. <br>" +
+                    "Proper format is /multiply?num1=3&num2=4 <br>" +
+                    "Using default values of 6 and 8. <br>" +
+                    "Result is: " + num1 * num2);
+          } else {
+            try {
+              query_pairs = splitQuery(request.replace("multiply?", ""));
+              if (query_pairs.size() > 2) {
+                builder.append("HTTP/1.1 414 Bad Request\n");
+                builder.append("Content-Type: text/html; charset=utf-8\n");
+                builder.append("\n");
+                builder.append("Only use 2 numbers PLEASE!");
+              } else {
+                num1 = Integer.parseInt(query_pairs.get("num1"));
+                num2 = Integer.parseInt(query_pairs.get("num2"));
+
+                // Generate response
+                builder.append("HTTP/1.1 200 OK\n");
+                builder.append("Content-Type: text/html; charset=utf-8\n");
+                builder.append("\n");
+                builder.append("Result is: " + num1 * num2);
+              }
+            } catch (NumberFormatException e) {
+              num1 = 7;
+              num2 = 2;
+
+              // Generate response
+              builder.append("HTTP/1.1 400 Bad Request\n");
+              builder.append("Content-Type: text/html; charset=utf-8\n");
+              builder.append("\n");
+              builder.append("GET request parameters must be numbers. <br>" +
+                      "Proper format is /multiply?num1=3&num2=4 <br>" +
+                      "Using default values of 7 and 2. <br>" +
+                      "Result is: " + num1 * num2);
+            }
           }
 
         } else if (request.contains("github?")) {
@@ -262,12 +259,61 @@ class WebServer {
           // "Owner's repo is named RepoName. Example: find RepoName's contributors" translates to
           //     "/repos/OWNERNAME/REPONAME/contributors"
 
-          Map<String, String> query_pairs = new LinkedHashMap<String, String>();
-          query_pairs = splitQuery(request.replace("github?", ""));
-          String json = fetchURL("https://api.github.com/" + query_pairs.get("query"));
-          System.out.println(json);
+          if (request.equals("github?")) {
+            builder.append("HTTP/1.1 400 Bad Request\n");
+            builder.append("Content-Type: text/html; charset=utf-8\n");
+            builder.append("\n");
+            builder.append("Correct format is  /github?query=users/amehlhase316/repos. <br>");
+            builder.append("Replace amehlase316 with whichever username you want to see");
+          } else {
+            try {
+              Map<String, String> query_pairs = new LinkedHashMap<String, String>();
+              query_pairs = splitQuery(request.replace("github?", ""));
 
-          builder.append("Check the todos mentioned in the Java source file");
+              JSONParser parser = new JSONParser();
+              String json = fetchURL("https://api.github.com/" + query_pairs.get("query"));
+
+              Object repo = parser.parse(json);
+              JSONArray array = (JSONArray) repo;
+              JSONObject tempObj;
+              JSONObject ownerObj;
+
+              // Generate response
+              builder.append("HTTP/1.1 200 OK\n");
+              builder.append("Content-Type: text/html; charset=utf-8\n");
+              builder.append("\n");
+
+              for (int i = 0; i < array.size() - 1; i++) {
+                tempObj = (JSONObject) array.get(i);
+                ownerObj = (JSONObject) tempObj.get("owner");
+                String ownerLogin = (String) ownerObj.get("login");
+
+                builder.append("Repo full name: " + tempObj.get("full_name") + "<br>");
+                builder.append("Repo ID: " + tempObj.get("id") + "<br>");
+                builder.append("Owner login: " + ownerLogin + "<br><br>");
+              }
+            } catch (ParseException e) {
+              // Generate response
+              builder.append("HTTP/1.1 400 Bad Request\n");
+              builder.append("Content-Type: text/html; charset=utf-8\n");
+              builder.append("\n");
+              builder.append("Correct format is  /github?query=users/amehlhase316/repos. <br>");
+              builder.append("Replace amehlase316 with whichever username you want to see");
+
+              System.out.println("Position: " + e.getPosition());
+            } catch (NullPointerException e) {
+              builder.setLength(0);
+              builder.append("HTTP/1.1 400 Bad Request\n");
+              builder.append("Content-Type: text/html; charset=utf-8\n");
+              builder.append("\n");
+              builder.append("Bad API call. Correct format is  /github?query=users/amehlhase316/repos. <br>");
+              builder.append("Replace amehlase316 with whichever username you want to see");
+            }
+          }
+
+
+
+          //builder.append("Check the todos mentioned in the Java source file");
           // TODO: Parse the JSON returned by your fetch and create an appropriate
           // response
           // and list the owner name, owner id and name of the public repo on your webpage, e.g.
