@@ -247,6 +247,11 @@ class WebServer {
                       "Proper format is /multiply?num1=3&num2=4 <br>" +
                       "Using default values of 7 and 2. <br>" +
                       "Result is: " + num1 * num2);
+            } catch (StringIndexOutOfBoundsException e) {
+              builder.append("HTTP/1.1 414 Bad Request\n");
+              builder.append("Content-Type: text/html; charset=utf-8\n");
+              builder.append("\n");
+              builder.append("Only use 2 numbers PLEASE!");
             }
           }
 
