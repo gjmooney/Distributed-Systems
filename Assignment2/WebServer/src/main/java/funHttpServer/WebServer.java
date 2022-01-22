@@ -220,7 +220,7 @@ class WebServer {
           } else {
             try {
               query_pairs = splitQuery(request.replace("multiply?", ""));
-              if (query_pairs.size() > 2) {
+              if (query_pairs.size() != 2) {
                 builder.append("HTTP/1.1 414 Bad Request\n");
                 builder.append("Content-Type: text/html; charset=utf-8\n");
                 builder.append("\n");
@@ -311,16 +311,213 @@ class WebServer {
             }
           }
 
+        } else if (request.contains("recipe?")) {
+          if (request.equals("recipe?")) {
+            builder.append("HTTP/1.1 400 Bad Request\n");
+            builder.append("Content-Type: text/html; charset=utf-8\n");
+            builder.append("\n");
+            builder.append("Correct format is  /recipe?query=banana&number=2. <br>");
+          } else {
+            try {
+              Map<String, String> query_pairs = new LinkedHashMap<String, String>();
+              query_pairs = splitQuery(request.replace("recipe?", ""));
 
+              System.out.println(query_pairs);
+              JSONParser parser = new JSONParser();
+//              String json = fetchURL("https://api.spoonacular.com/food/ingredients/search?query=" +
+//                      query_pairs.get("query") + "&number=" + query_pairs.get("number") +
+//                      "&apiKey=de6bed90f6d246928993a6fb241e6462");
+              String json = fetchURL("https://api.spoonacular.com/recipes/complexSearch?query=" +
+                      query_pairs.get("query") + "&number=" + query_pairs.get("number") +
+                      "&apiKey=de6bed90f6d246928993a6fb241e6462");
+              System.out.println(json);
 
-          //builder.append("Check the todos mentioned in the Java source file");
-          // TODO: Parse the JSON returned by your fetch and create an appropriate
-          // response
-          // and list the owner name, owner id and name of the public repo on your webpage, e.g.
-          // amehlhase, 46384989 -> memoranda
-          // amehlhase, 46384989 -> ser316examples
-          // amehlhase, 46384989 -> test316
+              Object recipeList = parser.parse(json);
+              JSONObject resultsObject = (JSONObject) recipeList;
+              System.out.println(resultsObject);
+              JSONArray array = (JSONArray) resultsObject.get("results");
+              System.out.println(array);
+              JSONObject tempObj;
+              System.out.println("size " + array.size());
+              //System.out.println("Array first " + array.get(0));
+              //System.out.println("Array second " + array.get(1));
+              // Generate response
 
+              if (array.size() > 0) {
+                builder.append("HTTP/1.1 200 OK\n");
+                builder.append("Content-Type: text/html; charset=utf-8\n");
+                builder.append("\n");
+                for (int i = 0; i < array.size(); i++) {
+                  tempObj = (JSONObject) array.get(i);
+                  builder.append("Idea #" + (i + 1) + ": ");
+                 // builder.append(tempObj.get("name"));
+                  builder.append(tempObj.get("title"));
+                  builder.append("<br><img src=\"" + tempObj.get("image") + "\"</img><br>");
+                  builder.append("<br><br>");
+                }
+                builder.append("<br> Recipes and images from Spoontacular");
+              } else {
+                builder.append("HTTP/1.1 400 Bad Request\n");
+                builder.append("Content-Type: text/html; charset=utf-8\n");
+                builder.append("\n");
+                builder.append("No results found! Try a different ingredient. <br>");
+              }
+
+            } catch (ParseException e) {
+              // Generate response
+              builder.append("HTTP/1.1 400 Bad Request\n");
+              builder.append("Content-Type: text/html; charset=utf-8\n");
+              builder.append("\n");
+              builder.append("Bad API call. Correct format is  recipe?query=banana&number=2 <br>");
+
+              System.out.println("Position: " + e.getPosition());
+            } catch (NullPointerException e) {
+              builder.setLength(0);
+              builder.append("HTTP/1.1 400 Bad Request\n");
+              builder.append("Content-Type: text/html; charset=utf-8\n");
+              builder.append("\n");
+              builder.append("Bad API call. Correct format is  recipe?query=banana&number=2 <br>");
+            }
+          }
+
+        } else if (request.contains("sign?")) {
+          Integer month = 0;
+          Integer day = 0;
+          Map<String, String> query_pairs = new LinkedHashMap<String, String>();
+          // extract path parameters
+          if (request.equals("sign?")) {
+            // Generate response
+            builder.append("HTTP/1.1 400 Bad Request\n");
+            builder.append("Content-Type: text/html; charset=utf-8\n");
+            builder.append("\n");
+            builder.append("Must provide birth day and month");
+          } else {
+            try {
+              query_pairs = splitQuery(request.replace("sign?", ""));
+              if (query_pairs.size() != 2) {
+                builder.setLength(0);
+                builder.append("HTTP/1.1 414 Bad Request\n");
+                builder.append("Content-Type: text/html; charset=utf-8\n");
+                builder.append("\n");
+                builder.append("Enter ONLY a month and day! PLEASE!");
+              } else {
+                try {
+                  month = Integer.parseInt(query_pairs.get("month"));
+                  day = Integer.parseInt(query_pairs.get("day"));
+                  String sign;
+
+                  switch (month) {
+                    case 1:
+                      if (day <= 19) {
+                        sign = "Capricorn";
+                      } else {
+                        sign = "Aquarius";
+                      }
+                      break;
+                    case 2:
+                      if (day <= 18) {
+                        sign = "Aquarius";
+                      } else {
+                        sign = "Pisces";
+                      }
+                      break;
+                    case 3:
+                      if (day <= 20) {
+                        sign = "Pisces";
+                      } else {
+                        sign = "Aries";
+                      }
+                      break;
+                    case 4:
+                      if (day <= 19) {
+                        sign = "Aries";
+                      } else {
+                        sign = "Taurus";
+                      }
+                      break;
+                    case 5:
+                      if (day <= 20) {
+                        sign = "Taurus";
+                      } else {
+                        sign = "Gemini";
+                      }
+                      break;
+                    case 6:
+                      if (day <= 20) {
+                        sign = "Gemini";
+                      } else {
+                        sign = "Cancer";
+                      }
+                      break;
+                    case 7:
+                      if (day <= 22) {
+                        sign = "Cancer";
+                      } else {
+                        sign = "Leo";
+                      }
+                      break;
+                    case 8:
+                      if (day <= 22) {
+                        sign = "Leo";
+                      } else {
+                        sign = "Virgo";
+                      }
+                      break;
+                    case 9:
+                      if (day <= 22) {
+                        sign = "Virgo";
+                      } else {
+                        sign = "Libra";
+                      }
+                      break;
+                    case 10:
+                      if (day <= 22) {
+                        sign = "Libra";
+                      } else {
+                        sign = "Scorpio";
+                      }
+                      break;
+                    case 11:
+                      if (day <= 21) {
+                        sign = "Scorpio";
+                      } else {
+                        sign = "Sagittarius";
+                      }
+                      break;
+                    case 12:
+                      if (day <= 21) {
+                        sign = "Sagittarius";
+                      } else {
+                        sign = "Capricorn";
+                      }
+                      break;
+                    default:
+                      System.out.println("M:" + month +" d: " + day);
+                      sign = "Enter a real date!";
+                  }
+
+                  // Generate response
+                  builder.append("HTTP/1.1 200 OK\n");
+                  builder.append("Content-Type: text/html; charset=utf-8\n");
+                  builder.append("\n");
+                  builder.append("Your sign is: " + sign);
+                } catch (NumberFormatException e) {
+                  // Generate response
+                  builder.append("HTTP/1.1 400 Bad Request\n");
+                  builder.append("Content-Type: text/html; charset=utf-8\n");
+                  builder.append("\n");
+                  builder.append("GET request parameters must be numbers. <br>");
+                  builder.append("Proper format is /sign?month=3&day=14 <br>");
+                }
+              }
+            } catch (StringIndexOutOfBoundsException e) {
+              builder.append("HTTP/1.1 400 Bad Request\n");
+              builder.append("Content-Type: text/html; charset=utf-8\n");
+              builder.append("\n");
+              builder.append("Improper syntax. <br>");
+              builder.append("Proper format is /sign?month=3&day=14 <br>");
+            }
+          }
         } else {
           // if the request is not recognized at all
 
@@ -347,7 +544,7 @@ class WebServer {
    * @return Map of all parameters and their specific values
    * @throws UnsupportedEncodingException If the URLs aren't encoded with UTF-8
    */
-  public static Map<String, String> splitQuery(String query) throws UnsupportedEncodingException {
+  public static Map<String, String> splitQuery(String query) throws UnsupportedEncodingException, StringIndexOutOfBoundsException {
     Map<String, String> query_pairs = new LinkedHashMap<String, String>();
     // "q=hello+world%2Fme&bob=5"
     String[] pairs = query.split("&");
