@@ -4,6 +4,9 @@ apply plugin: 'application'
 //define main class
 mainClassName = 'Concentration'
 
+    def host = 'localhost'
+    def port = 8080
+
 repositories {
     mavenCentral()
 }
@@ -12,12 +15,23 @@ dependencies {
     implementation group: 'org.json', name: 'json', version: '20200518'
 }
 
-task Gui(type: JavaExec) {
+//gradle runClient -Pport=8080 -Phost='localhost'
+task runClient(type: JavaExec) {
+  classpath = sourceSets.main.runtimeClasspath
   group 'gui'
   description 'Displays a GUI for a game of concentration'
-
-  classpath = sourceSets.main.runtimeClasspath
-
-  main = 'Assignment3Starter.ClientGui'
+  main = 'client.ClientGui'
   standardInput = System.in
+  
+  args host
+  args port
+}
+
+//gradle runServer -Pport=9099
+task runServer(type: JavaExec) {
+  classpath = sourceSets.main.runtimeClasspath
+  description = "Run Server for quote guessing game"
+  main = 'server.Server'
+  // default args
+  args port
 }
