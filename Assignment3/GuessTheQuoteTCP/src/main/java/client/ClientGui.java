@@ -1,9 +1,12 @@
-package Assignment3Starter;
+package client;
 
 import java.awt.Dimension;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.net.Socket;
 
 import javax.swing.JDialog;
 import javax.swing.WindowConstants;
@@ -28,10 +31,11 @@ import javax.swing.WindowConstants;
  * > Does not show when created. show() must be called to show he GUI.
  * 
  */
-public class ClientGui implements Assignment3Starter.OutputPanel.EventHandlers {
+public class ClientGui implements client.OutputPanel.EventHandlers {
   JDialog frame;
   PicturePanel picturePanel;
   OutputPanel outputPanel;
+  static ObjectOutputStream outputStream;
 
   /**
    * Construct dialog
@@ -125,6 +129,7 @@ public class ClientGui implements Assignment3Starter.OutputPanel.EventHandlers {
     if (input.length() > 0) {
       // append input to the output panel
       outputPanel.appendOutput(input);
+      sendToServer(outputStream, input);
       // clear input text box
       outputPanel.setInputText("");
     }
@@ -142,21 +147,58 @@ public class ClientGui implements Assignment3Starter.OutputPanel.EventHandlers {
     }
   }
 
+  public static void establishConnection(String[] args) {
+    Socket serverSock = null;
+    //ObjectOutputStream outputStream = null;
+    ObjectInputStream inputStream = null;
+    int port = 8080;
+    //String host = "localhost";
+    String testString = "CONNECTED";
+
+    if (args.length != 2) {
+      System.out.println("Expected two arguments: <host(String)> <port(int)>");
+      System.exit(1);
+    }
+    String host = args[0];
+    try {
+      port = Integer.parseInt(args[1]);
+    } catch (NumberFormatException e) {
+      System.out.println("Port number must be an integer");
+      System.exit(2);
+    }
+
+    try {
+      serverSock = new Socket(host, port);
+      outputStream = new ObjectOutputStream(serverSock.getOutputStream());
+      sendToServer(outputStream, testString);
+    } catch (Exception e) {
+      e.printStackTrace();
+      System.out.println("Could not establish connection over port: " + port);
+      System.exit(2);
+    }
+  }
+
+  public static void sendToServer(ObjectOutputStream outStream, String message) {
+    try {
+      outStream.writeObject(message);
+
+    } catch (Exception e) {
+      e.printStackTrace();
+      System.out.println("BOOGERS");
+    }
+  }
+
   public static void main(String[] args) throws IOException {
+    establishConnection(args);
     // create the frame
     ClientGui main = new ClientGui();
 
-    
-    
     // setup the UI to display on image
     main.newGame(1);
-    
+
     // add images to the grid
     main.insertImage("img/Jack_Sparrow/quote4.png", 0, 0);
 
-
-  
-    
     // show the GUI dialog as modal
     main.show(true); // you should not have your logic after this. You main logic should happen whenever "submit" is clicked
   }

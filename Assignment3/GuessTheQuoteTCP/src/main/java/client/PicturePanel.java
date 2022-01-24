@@ -1,4 +1,4 @@
-package Assignment3Starter;
+package client;
 
 import java.awt.FlowLayout;
 import java.awt.GridLayout;
@@ -157,7 +157,7 @@ public class PicturePanel extends JPanel {
   
   /**
    * Insert an image at position at (col, row)
-   * @param fname - filename of image to display
+   * @param image - filename of image to display
    * @param row - image box row
    * @param col - image box column
    * @return true if image was found and set, false otherwise
@@ -167,8 +167,8 @@ public class PicturePanel extends JPanel {
   public void insertImage(ByteArrayInputStream image, int row, int col) throws IOException, InvalidCoordinateException {
 	  BufferedImage img = ImageIO.read(image);
     // Check or invalid coordinates
-    if (row < 0 || col < 0 || 
-        row >= 0 && labels.length <= row || 
+    if (row < 0 || col < 0 ||
+        row >= 0 && labels.length <= row ||
         labels[row].length <= col) {
       throw new InvalidCoordinateException(labels.length, labels.length, row, col);
     }

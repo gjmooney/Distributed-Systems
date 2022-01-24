@@ -1,4 +1,4 @@
-package Assignment3Starter;
+package client;
 
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
@@ -158,7 +158,7 @@ public class OutputPanel extends JPanel {
 
   /**
    * Register event observers
-   * @param handler
+   * @param handlerObj
    */
   public void addEventHandlers(EventHandlers handlerObj) {
     handlers.add(handlerObj);
