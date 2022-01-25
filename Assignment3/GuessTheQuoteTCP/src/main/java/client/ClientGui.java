@@ -154,7 +154,7 @@ public class ClientGui implements client.OutputPanel.EventHandlers {
     ObjectInputStream inputStream = null;
     int port = 8080;
     //String host = "localhost";
-    String testString = null;
+    String testString = "TEST STRING";
 
     if (args.length != 2) {
       System.out.println("Expected two arguments: <host(String)> <port(int)>");
@@ -172,30 +172,9 @@ public class ClientGui implements client.OutputPanel.EventHandlers {
       serverSock = new Socket(host, port);
       outputStream = new ObjectOutputStream(serverSock.getOutputStream());
       inputStream = new ObjectInputStream(serverSock.getInputStream());
-      Scanner input = new Scanner(System.in);
-      int choice;
+      sendToServer(outputStream, testString);
 
-      do {
-        System.out.println("Enter 1 or 2");
-        choice = input.nextInt();
-        switch (choice) {
-          case (1):
-            testString = "one";
-            break;
-          case (2):
-            testString = "two";
-            break;
-          default:
-            System.out.println("Enter valid option");
-            break;
-        }
 
-        if (testString != null) {
-          sendToServer(outputStream, testString);
-          Object fromServer = inputStream.readObject();
-          System.out.println("Reply from server " + fromServer);
-        }
-      } while (true);
     } catch (Exception e) {
       e.printStackTrace();
       System.out.println("Could not establish connection over port: " + port);
@@ -205,6 +184,7 @@ public class ClientGui implements client.OutputPanel.EventHandlers {
 
   public static void sendToServer(ObjectOutputStream outStream, String message) {
     try {
+      System.out.println("[METHOD] SEND TO SERVER");
       outStream.writeObject(message);
 
     } catch (Exception e) {
