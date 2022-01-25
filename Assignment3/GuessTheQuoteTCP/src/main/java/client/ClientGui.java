@@ -1,5 +1,8 @@
 package client;
 
+import org.json.JSONObject;
+import org.json.JSONTokener;
+
 import java.awt.Dimension;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
@@ -7,6 +10,7 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
+import java.util.Map;
 import java.util.Scanner;
 
 import javax.swing.JDialog;
@@ -37,6 +41,8 @@ public class ClientGui implements client.OutputPanel.EventHandlers {
   PicturePanel picturePanel;
   OutputPanel outputPanel;
   static ObjectOutputStream outputStream;
+  static ObjectInputStream inputStream;
+  static Socket serverSock;
 
   /**
    * Construct dialog
@@ -130,7 +136,7 @@ public class ClientGui implements client.OutputPanel.EventHandlers {
     if (input.length() > 0) {
       // append input to the output panel
       outputPanel.appendOutput(input);
-      sendToServer(outputStream, input);
+      sendToServer(input);
       // clear input text box
       outputPanel.setInputText("");
     }
@@ -148,10 +154,10 @@ public class ClientGui implements client.OutputPanel.EventHandlers {
     }
   }
 
-  public static void establishConnection(String[] args) {
-    Socket serverSock = null;
+  public void establishConnection(String[] args) {
+    serverSock = null;
     //ObjectOutputStream outputStream = null;
-    ObjectInputStream inputStream = null;
+    //ObjectInputStream inputStream = null;
     int port = 8080;
     //String host = "localhost";
     String testString = "TEST STRING";
@@ -172,9 +178,7 @@ public class ClientGui implements client.OutputPanel.EventHandlers {
       serverSock = new Socket(host, port);
       outputStream = new ObjectOutputStream(serverSock.getOutputStream());
       inputStream = new ObjectInputStream(serverSock.getInputStream());
-      sendToServer(outputStream, testString);
-
-
+      //sendToServer(testString);
     } catch (Exception e) {
       e.printStackTrace();
       System.out.println("Could not establish connection over port: " + port);
@@ -182,21 +186,41 @@ public class ClientGui implements client.OutputPanel.EventHandlers {
     }
   }
 
-  public static void sendToServer(ObjectOutputStream outStream, String message) {
+  public void receiveFromServer() throws IOException, ClassNotFoundException {
+    try {
+      String jsonData = (String) inputStream.readObject();
+      JSONTokener jsonTokener = new JSONTokener(jsonData);
+      JSONObject namePrompt = new JSONObject(jsonTokener);
+      JSONObject headerJSON = (JSONObject) namePrompt.get("header");
+      JSONObject payloadJSON = (JSONObject) namePrompt.get("payload");
+      Map header = headerJSON.toMap();
+      Map payload = payloadJSON.toMap();
+      if (header.get("method").equals("appendOutput")) {
+        outputPanel.appendOutput((String) payload.get("text"));
+      }
+    } catch (Exception e) {
+      e.printStackTrace();
+      System.out.println("Error receiving from server");
+    }
+  }
+
+  public static void sendToServer(String message) {
     try {
       System.out.println("[METHOD] SEND TO SERVER");
-      outStream.writeObject(message);
+      outputStream.writeObject(message);
 
     } catch (Exception e) {
       e.printStackTrace();
-      System.out.println("BOOGERS");
+      System.out.println("Error sending to server");
     }
   }
 
   public static void main(String[] args) throws IOException {
-    establishConnection(args);
+    //establishConnection(args);
     // create the frame
     ClientGui main = new ClientGui();
+    main.establishConnection(args);
+
 
     // setup the UI to display on image
     main.newGame(1);
@@ -204,6 +228,12 @@ public class ClientGui implements client.OutputPanel.EventHandlers {
     // add images to the grid
     main.insertImage("img/Jack_Sparrow/quote4.png", 0, 0);
 
+    try {
+      main.receiveFromServer();
+    } catch (Exception e) {
+      e.printStackTrace();
+      System.out.println("Error receiving from server in main");
+    }
     // show the GUI dialog as modal
     main.show(true); // you should not have your logic after this. You main logic should happen whenever "submit" is clicked
   }

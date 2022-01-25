@@ -1,8 +1,11 @@
 package server;
 
+import org.json.JSONObject;
+
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
+
 
 public class Server {
     public static void main(String[] args) throws IOException {
@@ -38,6 +41,11 @@ public class Server {
                     System.out.println("Server accepted socket");
                     inputStream = new ObjectInputStream(clientSocket.getInputStream());
                     outputStream = new ObjectOutputStream(clientSocket.getOutputStream());
+
+                    // ask client for name after first connection
+                    JSONObject sendToClient = askName();
+                    outputStream.writeObject(sendToClient.toString());
+
                     while (true) {
                         Object fromClient = inputStream.readObject();
                         System.out.println(fromClient);
@@ -67,5 +75,18 @@ public class Server {
         }
 
 
+    }
+
+    //send a response to the client telling it to call appendOutput and ask for clients name
+    public static JSONObject askName() {
+        JSONObject namePrompt = new JSONObject();
+        JSONObject nameHeader = new JSONObject();
+        JSONObject namePayload = new JSONObject();
+        nameHeader.put("method", "appendOutput");
+        namePayload.put("text", "Hey! What's your name!?");
+        namePrompt.put("header", nameHeader);
+        namePrompt.put("payload", namePayload);
+        System.out.println(namePrompt);
+        return namePrompt;
     }
 }
