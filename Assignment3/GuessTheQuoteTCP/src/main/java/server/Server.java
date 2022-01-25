@@ -1,8 +1,6 @@
 package server;
 
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
+import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 
@@ -15,9 +13,7 @@ public class Server {
         Socket clientSocket = null;
         int port = 8080;
         int sleepDelay = 10000;
-        for (int i = 0; i < args.length; i++) {
-            System.out.println("Args: " + args[i]);
-        }
+
         if (args.length > 1) {
             System.out.println("Expected one argument: <port(int)>");
             System.exit(1);
@@ -33,34 +29,44 @@ public class Server {
 
         try {
             serverSock = new ServerSocket(port);
+            while (true) {
+                System.out.println("COUNT THIS");
+                clientSocket = null;
+                try {
+                    System.out.println("Waiting for client to connect");
+                    clientSocket = serverSock.accept();
+                    System.out.println("Server accepted socket");
+                    inputStream = new ObjectInputStream(clientSocket.getInputStream());
+                    outputStream = new ObjectOutputStream(clientSocket.getOutputStream());
+                    Object fromClient = inputStream.readObject();
+                    System.out.println(fromClient);
+                    String reply = "ACKNOWLEDGE";
+                    outputStream.writeObject(reply);
+                    if (clientSocket == null) {
+                        System.out.println("WHY NULL");
+                    }
+                    System.out.println("SERVER: END OF TRY");
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    System.out.println("Client disconnected");
+                } finally {
+                    if (clientSocket == null) {
+                        System.out.println("Closing client socket");
+                        clientSocket.close();
+                    }
+                }
+            }
         } catch (Exception e) {
             e.printStackTrace();
             System.out.println("Could not establish connection over port: " + port);
             System.exit(2);
-        }
-
-        while (serverSock.isBound() && !serverSock.isClosed()) {
-            try {
-                clientSocket = serverSock.accept();
-                inputStream = new ObjectInputStream(clientSocket.getInputStream());
-                outputStream = new ObjectOutputStream(clientSocket.getOutputStream());
-                System.out.println(inputStream.readObject());
-                System.out.println("SERVER: END OF TRY");
-
-            } catch (Exception e) {
-                e.printStackTrace();
-                System.out.println("Client could not establish connection");
-            } finally {
-                if (outputStream != null) {
-                    outputStream.close();
-                }
-                if (inputStream != null) {
-                    inputStream.close();
-                }
-                if (clientSocket != null) {
-                    clientSocket.close();
-                }
+        } finally {
+            if (serverSock != null) {
+                System.out.println("Closing server socket");
+                serverSock.close();
             }
         }
+
+
     }
 }
