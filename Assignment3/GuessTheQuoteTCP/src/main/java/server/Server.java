@@ -38,14 +38,13 @@ public class Server {
                     System.out.println("Server accepted socket");
                     inputStream = new ObjectInputStream(clientSocket.getInputStream());
                     outputStream = new ObjectOutputStream(clientSocket.getOutputStream());
-                    Object fromClient = inputStream.readObject();
-                    System.out.println(fromClient);
-                    String reply = "ACKNOWLEDGE";
-                    outputStream.writeObject(reply);
-                    if (clientSocket == null) {
-                        System.out.println("WHY NULL");
+                    while (true) {
+                        Object fromClient = inputStream.readObject();
+                        System.out.println(fromClient);
+                        String reply = "ACKNOWLEDGE";
+                        outputStream.writeObject(reply);
+                        System.out.println("SERVER: END OF WHILE");
                     }
-                    System.out.println("SERVER: END OF TRY");
                 } catch (Exception e) {
                     e.printStackTrace();
                     System.out.println("Client disconnected");
