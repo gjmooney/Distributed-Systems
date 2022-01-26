@@ -3,30 +3,46 @@ package server;
 import org.json.JSONObject;
 import org.json.JSONTokener;
 
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.Base64;
+import java.util.Locale;
 import java.util.Map;
 
 
 public class Server {
-    private String dataFromClient;
+    private String payloadFromClient;
+    private String status;
     private int state;
+    boolean gameOver = false;
 
     public Server() {
         this.setState(0);
-        this.setDataFromClient(null);
+        this.setPayloadFromClient("");
+        this.status = "";
     }
 
-    public String getDataFromClient() {
-        return dataFromClient;
+    public String getPayloadFromClient() {
+        return payloadFromClient;
     }
 
-    public void setDataFromClient(String dataFromClient) {
-        this.dataFromClient = dataFromClient;
+    public void setPayloadFromClient(String payloadFromClient) {
+        this.payloadFromClient = payloadFromClient;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
     }
 
     public int getState() {
+        System.out.println("STATE: " + state);
         return state;
     }
 
@@ -58,7 +74,7 @@ public class Server {
 
         try {
             serverSock = new ServerSocket(port);
-            //TODO set state to 1
+            setState(1);
             while (true) {
                 System.out.println("COUNT THIS");
                 clientSocket = null;
@@ -71,7 +87,7 @@ public class Server {
                     outputStream = new ObjectOutputStream(clientSocket.getOutputStream());
 
                     // ask client for name after first connection
-                    sendToClient = createResponse(1, "Hey! What's your name!?");
+                    sendToClient = createResponse(getState(), "Hey! What's your name!?");
                     outputStream.writeObject(sendToClient.toString());
 
                     while (true) {
@@ -79,7 +95,7 @@ public class Server {
                         Object fromClient = inputStream.readObject();
                         receiveFromClient((String) fromClient);
                         //TODO add extra logic in create response for state 3, maybe increment in createResponse
-                        sendToClient = createResponse(2, getDataFromClient());
+                        sendToClient = createResponse(getState(), getPayloadFromClient());
                         outputStream.writeObject(sendToClient.toString());
 
                         System.out.println("SERVER: END OF WHILE");
@@ -116,19 +132,9 @@ public class Server {
             JSONObject payloadJSON = (JSONObject) namePrompt.get("payload");
             Map header = headerJSON.toMap();
             Map payload = payloadJSON.toMap();
-//            int state = (int) header.get("state");
-//
-//            switch (state) {
-//                case 1:
-//                    String reply = "Hello " + payload.get("text") + ". Do you want to see the " +
-//                            "leaderboard or start the game?";
-//                    createResponse(2, reply);
-//                    break;
-//                default:
-//                    createResponse(5, "ERROR");
-//            }
-            setState((int) header.get("state"));
-            setDataFromClient((String) payload.get("text"));
+            //setState((int) header.get("state"));
+            String reply = ((String) payload.get("text"));
+            setPayloadFromClient(reply.toLowerCase(Locale.ROOT));
 
 
         } catch (Exception e) {
@@ -140,37 +146,108 @@ public class Server {
     }
 
     //send a response to the client
-    public static JSONObject createResponse(int state, String message) {
+    public JSONObject createResponse(int state, String message) throws IOException {
         JSONObject objectToSend = new JSONObject();
         JSONObject objHeader = new JSONObject();
         JSONObject objPayload = new JSONObject();
+        String imageToSend;
         switch (state) {
             case 1:
+                // Ask clients name
+                imageToSend = encodeImage("hi");
                 objHeader.put("state", state);
                 objHeader.put("type", "text");
                 objHeader.put("ok", true);
                 objPayload.put("text", message);
+                objPayload.put("image", imageToSend);
+                setState(getState() + 1);
                 break;
             case 2:
+                // Greet client by name
                 String reply = "Hello " + message + ". Do you want to see the " +
                            "leaderboard or start the game?";
                 objHeader.put("state", state);
                 objHeader.put("type", "text");
                 objHeader.put("ok", true);
                 objPayload.put("text", reply);
+                setState(getState() + 1);
                 break;
+            case 3:
+                // Ask if client wants to see the leaderboard or start the game
+                if (getPayloadFromClient().equals("start")) {
+                    objHeader.put("state", state);
+                    objHeader.put("type", "text");
+                    objHeader.put("ok", true);
+                    objPayload.put("text", "Who said the quote?");
+                    setState(getState() + 1);
+                    break;
+                } else if (getPayloadFromClient().equals("leader")) {
+                    objHeader.put("state", state);
+                    objHeader.put("type", "text");
+                    objHeader.put("ok", true);
+                    //objPayload.put("text", getLeaderboard());
+                    setState(6);
+                    break;
+                } else {
+                    objHeader.put("state", state);
+                    objHeader.put("type", "text");
+                    objHeader.put("ok", false);
+                    objPayload.put("text", "Sorry I didn't understand that. Please enter start or leader");
+                    break;
+                }
+            case 4:
+                //actual gameplay -- server expects a name, more, or next
+                //gameLogic();
+                break;
+
             default:
                 objHeader.put("state", state);
                 objHeader.put("type", "text");
                 objHeader.put("ok", false);
                 objPayload.put("text", "ERROR ERROR ERROR");
+                setState(7);
                 break;
         }
         objectToSend.put("header", objHeader);
         objectToSend.put("payload", objPayload);
         System.out.println("JSON on server" + objectToSend + "\n");
+
+
         return objectToSend;
     }
+
+    public void gameLogic() {
+
+    }
+
+    public String encodeImage(String imageType) throws IOException {
+        String encodedImage;
+        File file;
+        if (imageType.equals("hi")) {
+            file = new File("src/main/resources/img/hi.png");
+
+        } else {
+            file = new File("/nope");
+        }
+        if (!file.exists()) {
+            System.out.println("File not found: " + file.getAbsolutePath());
+            return "File not found";
+        }
+        BufferedImage image = ImageIO.read(file);
+        byte[] bytes = null;
+        try (ByteArrayOutputStream output = new ByteArrayOutputStream()) {
+            ImageIO.write(image, "png", output);
+            bytes = output.toByteArray();
+        }
+        if (bytes != null) {
+            Base64.Encoder encoder = Base64.getEncoder();
+            encodedImage = encoder.encodeToString(bytes);
+            return encodedImage;
+        }
+        return "Unable to encode image";
+    }
+
+
 
     public static void main(String[] args) throws IOException {
         Server mainServer = new Server();

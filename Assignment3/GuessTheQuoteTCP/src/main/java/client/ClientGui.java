@@ -6,15 +6,18 @@ import org.json.JSONTokener;
 import java.awt.Dimension;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
+import java.util.Base64;
 import java.util.Map;
 import java.util.Scanner;
 
-import javax.swing.JDialog;
-import javax.swing.WindowConstants;
+import javax.imageio.ImageIO;
+import javax.swing.*;
 
 /**
  * The ClientGui class is a GUI frontend that displays an image grid, an input text box,
@@ -200,15 +203,7 @@ public class ClientGui implements client.OutputPanel.EventHandlers {
 
       state = (int) header.get("state");
       outputPanel.appendOutput((String) payload.get("text"));
-
-//      switch (state) {
-//        case 1:
-//          outputPanel.appendOutput((String) payload.get("text"));
-//          break;
-//        default:
-//          outputPanel.appendOutput("RECEIVE IN CLIENT SWITCH BROKE");
-//          break;
-//      }
+      decodeImage((String) payload.get("image"));
 
     } catch (Exception e) {
       e.printStackTrace();
@@ -224,20 +219,27 @@ public class ClientGui implements client.OutputPanel.EventHandlers {
       JSONObject objectToSend = new JSONObject();
       JSONObject objHeader = new JSONObject();
       JSONObject objPayload = new JSONObject();
-      switch (state) {
+      /*switch (state) {
         case 1:
+          objHeader.put("state", state);
+          objHeader.put("type", "text");
+          objHeader.put("status", "nameReply");
+          objHeader.put("ok", true);
+          objPayload.put("text", message);
+          break;
+        default:
           objHeader.put("state", 5);
           objHeader.put("type", "text");
           objHeader.put("ok", false);
           objPayload.put("text", "ERROR ERROR ERROR");
           break;
-        default:
-          objHeader.put("state", state);
-          objHeader.put("type", "text");
-          objHeader.put("ok", true);
-          objPayload.put("text", message);
-          break;
-      }
+      }*/
+      objHeader.put("state", state);
+      objHeader.put("type", "text");
+      //objHeader.put("status", "nameReply");
+      objHeader.put("ok", true);
+      objPayload.put("text", message);
+
       objectToSend.put("header", objHeader);
       objectToSend.put("payload", objPayload);
       System.out.println("JSON on client" + objectToSend);
@@ -248,6 +250,26 @@ public class ClientGui implements client.OutputPanel.EventHandlers {
       e.printStackTrace();
       System.out.println("Error sending to server");
     }
+  }
+
+  public void decodeImage(String imageString) throws IOException {
+    System.out.println("Your image");
+    Base64.Decoder decoder = Base64.getDecoder();
+    byte[] bytes = decoder.decode(imageString);
+    ImageIcon icon = null;
+    try (ByteArrayInputStream bais = new ByteArrayInputStream(bytes)) {
+      BufferedImage image = ImageIO.read(bais);
+      icon = new ImageIcon(image);
+    }
+    if (icon != null) {
+      JFrame frame = new JFrame();
+      JLabel label = new JLabel();
+      label.setIcon(icon);
+      frame.add(label);
+      frame.setSize(icon.getIconWidth(), icon.getIconHeight());
+      frame.show();
+    }
+
   }
 
   public static void main(String[] args) throws IOException {
