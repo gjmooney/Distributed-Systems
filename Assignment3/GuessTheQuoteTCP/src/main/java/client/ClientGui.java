@@ -99,25 +99,22 @@ public class ClientGui implements client.OutputPanel.EventHandlers {
   /**
    * Insert an image into the grid at position (col, row)
    * 
-   * @param filename - filename relative to the root directory
+   * @param image - decoded image sent from server
    * @param row - the row to insert into
    * @param col - the column to insert into
    * @return true if successful, false if an invalid coordinate was provided
    * @throws IOException An error occured with your image file
    */
-  public boolean insertImage(String filename, int row, int col) throws IOException {
+  public boolean insertImage(ImageIcon image, int row, int col) throws IOException {
     String error = "";
     try {
       // insert the image
-      if (picturePanel.insertImage(filename, row, col)) {
-      // put status in output
-        outputPanel.appendOutput("Inserting " + filename + " in position (" + row + ", " + col + ")");
-        return true;
-      }
-      error = "File(\"" + filename + "\") not found.";
+      picturePanel.insertImage(image, row, col);
+      return true;
     } catch(PicturePanel.InvalidCoordinateException e) {
       // put error in output
-      error = e.toString();
+      error = "Error receiving image from server.\n";
+      error += e.toString();
     }
     outputPanel.appendOutput(error);
     return false;
@@ -200,10 +197,11 @@ public class ClientGui implements client.OutputPanel.EventHandlers {
       Map header = headerJSON.toMap();
       Map payload = payloadJSON.toMap();
       System.out.println("JSON in client receive " + jsonObj);
+      ImageIcon image = decodeImage((String) payload.get("image"));
+      insertImage(image, 0 ,0);
 
       state = (int) header.get("state");
       outputPanel.appendOutput((String) payload.get("text"));
-      decodeImage((String) payload.get("image"));
 
     } catch (Exception e) {
       e.printStackTrace();
@@ -252,8 +250,7 @@ public class ClientGui implements client.OutputPanel.EventHandlers {
     }
   }
 
-  public void decodeImage(String imageString) throws IOException {
-    System.out.println("Your image");
+  public ImageIcon decodeImage(String imageString) throws IOException {
     Base64.Decoder decoder = Base64.getDecoder();
     byte[] bytes = decoder.decode(imageString);
     ImageIcon icon = null;
@@ -261,14 +258,8 @@ public class ClientGui implements client.OutputPanel.EventHandlers {
       BufferedImage image = ImageIO.read(bais);
       icon = new ImageIcon(image);
     }
-    if (icon != null) {
-      JFrame frame = new JFrame();
-      JLabel label = new JLabel();
-      label.setIcon(icon);
-      frame.add(label);
-      frame.setSize(icon.getIconWidth(), icon.getIconHeight());
-      frame.show();
-    }
+
+    return icon;
 
   }
 
@@ -283,7 +274,7 @@ public class ClientGui implements client.OutputPanel.EventHandlers {
     main.newGame(1);
 
     // add images to the grid
-    main.insertImage("img/Jack_Sparrow/quote4.png", 0, 0);
+    //main.insertImage("img/Jack_Sparrow/quote4.png", 0, 0);
 
     try {
      // main.show(true);
