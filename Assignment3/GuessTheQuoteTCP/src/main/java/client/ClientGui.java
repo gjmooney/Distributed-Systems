@@ -43,6 +43,7 @@ public class ClientGui implements client.OutputPanel.EventHandlers {
   static ObjectOutputStream outputStream;
   static ObjectInputStream inputStream;
   static Socket serverSock;
+  static int state; //track which point of the game we're in
 
   /**
    * Construct dialog
@@ -126,7 +127,6 @@ public class ClientGui implements client.OutputPanel.EventHandlers {
    */
   @Override
   public void submitClicked() {
-
     // An example how to update the points in the UI
     outputPanel.setPoints(10);
 
@@ -136,7 +136,7 @@ public class ClientGui implements client.OutputPanel.EventHandlers {
     if (input.length() > 0) {
       // append input to the output panel
       outputPanel.appendOutput(input);
-      sendToServer(input);
+      sendToServer(state, input);
       // clear input text box
       outputPanel.setInputText("");
     }
@@ -187,27 +187,62 @@ public class ClientGui implements client.OutputPanel.EventHandlers {
   }
 
   public void receiveFromServer() throws IOException, ClassNotFoundException {
+    System.out.println("Receiving from server");
     try {
       String jsonData = (String) inputStream.readObject();
       JSONTokener jsonTokener = new JSONTokener(jsonData);
-      JSONObject namePrompt = new JSONObject(jsonTokener);
-      JSONObject headerJSON = (JSONObject) namePrompt.get("header");
-      JSONObject payloadJSON = (JSONObject) namePrompt.get("payload");
+      JSONObject jsonObj = new JSONObject(jsonTokener);
+      JSONObject headerJSON = (JSONObject) jsonObj.get("header");
+      JSONObject payloadJSON = (JSONObject) jsonObj.get("payload");
       Map header = headerJSON.toMap();
       Map payload = payloadJSON.toMap();
-      if (header.get("method").equals("appendOutput")) {
-        outputPanel.appendOutput((String) payload.get("text"));
-      }
+      System.out.println("JSON in client receive " + jsonObj);
+
+      state = (int) header.get("state");
+      outputPanel.appendOutput((String) payload.get("text"));
+
+//      switch (state) {
+//        case 1:
+//          outputPanel.appendOutput((String) payload.get("text"));
+//          break;
+//        default:
+//          outputPanel.appendOutput("RECEIVE IN CLIENT SWITCH BROKE");
+//          break;
+//      }
+
     } catch (Exception e) {
       e.printStackTrace();
       System.out.println("Error receiving from server");
+      System.exit(1);
     }
   }
 
-  public static void sendToServer(String message) {
+  public static void sendToServer(int state, String message) {
     try {
       System.out.println("[METHOD] SEND TO SERVER");
-      outputStream.writeObject(message);
+
+      JSONObject objectToSend = new JSONObject();
+      JSONObject objHeader = new JSONObject();
+      JSONObject objPayload = new JSONObject();
+      switch (state) {
+        case 1:
+          objHeader.put("state", 5);
+          objHeader.put("type", "text");
+          objHeader.put("ok", false);
+          objPayload.put("text", "ERROR ERROR ERROR");
+          break;
+        default:
+          objHeader.put("state", state);
+          objHeader.put("type", "text");
+          objHeader.put("ok", true);
+          objPayload.put("text", message);
+          break;
+      }
+      objectToSend.put("header", objHeader);
+      objectToSend.put("payload", objPayload);
+      System.out.println("JSON on client" + objectToSend);
+
+      outputStream.writeObject(objectToSend.toString());
 
     } catch (Exception e) {
       e.printStackTrace();
@@ -229,12 +264,20 @@ public class ClientGui implements client.OutputPanel.EventHandlers {
     main.insertImage("img/Jack_Sparrow/quote4.png", 0, 0);
 
     try {
-      main.receiveFromServer();
+     // main.show(true);
+      while (true) {
+        System.out.println("first while");
+        main.receiveFromServer();
+        System.out.println("second while");
+        main.show(false);
+        System.out.println("DOES THIS HAPPEN");
+
+      }
     } catch (Exception e) {
       e.printStackTrace();
       System.out.println("Error receiving from server in main");
     }
     // show the GUI dialog as modal
-    main.show(true); // you should not have your logic after this. You main logic should happen whenever "submit" is clicked
+    //main.show(true); // you should not have your logic after this. You main logic should happen whenever "submit" is clicked
   }
 }
