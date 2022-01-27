@@ -9,35 +9,45 @@ public class GameLogic {
     private int numberOfGuesses;
     private int quoteNumber;
     private String quoteCharacter;
-    private boolean changeQuote;
+    private boolean guessWasCorrect;
 
     public GameLogic() {
         this.score = 0;
         this.numberOfGuesses = 0;
         this.quoteNumber = 0;
         this.quoteCharacter = "";
-        this.changeQuote = false;
+        this.guessWasCorrect = false;
     }
 
-    public JSONObject checkAnswer(String answerFromClient) {
+    public void checkAnswer(String answerFromClient) {
+        if (answerFromClient.equals(getQuoteCharacter())) {
+            setGuessWasCorrect(true);
+            System.out.println("checkAnswer: correct");
+        } else {
+            setGuessWasCorrect(false);
+            System.out.println("checkAnswer: wrong");
+        }
+    }
+
+    public JSONObject buildResponse(String answerFromClient) {
         JSONObject payloadForServer = new JSONObject();
         System.out.println("[CHECK ANSWER]");
         System.out.println("[ANSWER] " + getQuoteCharacter());
         System.out.println("[GUESS] " + answerFromClient);
 
-        if (answerFromClient.equals(getQuoteCharacter())) {
+        if (isGuessWasCorrect()) {
             //correct answer
             payloadForServer.put("text", "You got it right!");
             // increase score based on number of guesses
             changeScore();
-            setChangeQuote(true);
             payloadForServer.put("score", getScore());
+            // reset guesses
+            setNumberOfGuesses(0);
         } else {
             //wrong answer
             payloadForServer.put("text", "NOPE! you got it wrong!\nGuess again!");
             //score stays the same, number of guesses goes up
             setNumberOfGuesses(getNumberOfGuesses() + 1);
-            setChangeQuote(false);
             payloadForServer.put("score", getScore());
         }
 
@@ -102,11 +112,11 @@ public class GameLogic {
         this.quoteCharacter = quoteCharacter;
     }
 
-    public boolean isChangeQuote() {
-        return changeQuote;
+    public boolean isGuessWasCorrect() {
+        return guessWasCorrect;
     }
 
-    public void setChangeQuote(boolean changeQuote) {
-        this.changeQuote = changeQuote;
+    public void setGuessWasCorrect(boolean guessWasCorrect) {
+        this.guessWasCorrect = guessWasCorrect;
     }
 }

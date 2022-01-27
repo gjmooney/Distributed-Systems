@@ -164,7 +164,6 @@ public class Server {
                     objPayload.put("text", "Who said the quote?");
                     objPayload.put("image", imageToSend);
                     objPayload.put("score", 0);
-                    setPrevImage(imageToSend);
                     setState(getState() + 1);
                     break;
                 } else if (getPayloadFromClient().equals("leader")) {
@@ -189,21 +188,24 @@ public class Server {
                 }
             case 4:
                 //actual gameplay -- server expects a name, more, or next
-                if (gameLogic == null) {
-                    gameLogic = new GameLogic();
-                    System.out.println("THIS SHOULD NEVER HAPPEN");
-                }
+                // check if the answer is right and set the boolean in gameLogic
+                gameLogic.checkAnswer(message);
 
+                // start building JSON reply
                 objHeader.put("state", state);
                 objHeader.put("type", "text");
                 objHeader.put("ok", true);
-                objPayload = gameLogic.checkAnswer(message);
-                if (gameLogic.isChangeQuote()) {
+                objPayload = gameLogic.buildResponse(message);
+
+                // get a new quote if the guess was correct else use the previous quote
+                if (gameLogic.isGuessWasCorrect()) {
                     imageToSend = encodeImage("quote");
 
                 } else {
                     imageToSend = getPrevImage();
                 }
+
+                // finish building JSON reply
                 objPayload.put("image", imageToSend);
 
                 break;
@@ -268,6 +270,7 @@ public class Server {
         if (bytes != null) {
             Base64.Encoder encoder = Base64.getEncoder();
             encodedImage = encoder.encodeToString(bytes);
+            setPrevImage(encodedImage); // save image we just encoded
             return encodedImage;
         }
         return "Unable to encode image";
