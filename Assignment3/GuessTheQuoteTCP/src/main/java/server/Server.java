@@ -198,12 +198,20 @@ public class Server {
                 objPayload = gameLogic.buildResponse(message);
 
                 // get a new quote if the guess was correct else use the previous quote
-                if (gameLogic.isGuessWasCorrect()) {
-                    imageToSend = encodeImage("quote");
+                //TODO nest this if in another if that checks if game is over, put the win/lose pic there
+                if (!gameLogic.isGameOver()) {
+                    if (gameLogic.isGuessWasCorrect()) {
+                        imageToSend = encodeImage("quote");
 
+                    } else {
+                        imageToSend = getPrevImage();
+                    }
+                } else if (gameLogic.getCorrectGuesses() == 3) {
+                    imageToSend = encodeImage("win");
                 } else {
-                    imageToSend = getPrevImage();
+                    imageToSend = encodeImage("lose");
                 }
+
 
                 // finish building JSON reply
                 objPayload.put("image", imageToSend);
@@ -254,6 +262,10 @@ public class Server {
         } else if(imageType.equals("quote")) {
             String filename = chooseQuote();
             file = new File(filename);
+        } else if (imageType.equals("win")) {
+            file = new File("src/main/resources/img/win.jpg");
+        } else if (imageType.equals("lose")) {
+            file = new File("src/main/resources/img/lose.jpg");
         } else {
             file = new File("/nope");
         }

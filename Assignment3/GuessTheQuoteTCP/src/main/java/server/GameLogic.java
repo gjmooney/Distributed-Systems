@@ -8,8 +8,10 @@ public class GameLogic {
     private int score;
     private int numberOfGuesses;
     private int quoteNumber;
+    private int correctGuesses;
     private String quoteCharacter;
     private boolean guessWasCorrect;
+    private boolean gameOver;
 
     public GameLogic() {
         this.score = 0;
@@ -17,14 +19,19 @@ public class GameLogic {
         this.quoteNumber = 0;
         this.quoteCharacter = "";
         this.guessWasCorrect = false;
+        this.correctGuesses = 0;
     }
 
     public void checkAnswer(String answerFromClient) {
         if (answerFromClient.equals(getQuoteCharacter())) {
             setGuessWasCorrect(true);
+            changeScore();
             System.out.println("checkAnswer: correct");
+            setNumberOfGuesses(0);
+            setCorrectGuesses(getCorrectGuesses() + 1);
         } else {
             setGuessWasCorrect(false);
+            setNumberOfGuesses(getNumberOfGuesses() + 1);
             System.out.println("checkAnswer: wrong");
         }
     }
@@ -35,21 +42,22 @@ public class GameLogic {
         System.out.println("[ANSWER] " + getQuoteCharacter());
         System.out.println("[GUESS] " + answerFromClient);
 
-        if (isGuessWasCorrect()) {
-            //correct answer
-            payloadForServer.put("text", "You got it right!");
-            // increase score based on number of guesses
-            changeScore();
-            payloadForServer.put("score", getScore());
-            // reset guesses
-            setNumberOfGuesses(0);
+        if (getCorrectGuesses() < 3) {
+            if (isGuessWasCorrect()) {
+                //correct answer
+                payloadForServer.put("text", "You got it right!");
+                payloadForServer.put("score", getScore());
+            } else {
+                //wrong answer
+                payloadForServer.put("text", "NOPE! you got it wrong!\nGuess again!");
+                payloadForServer.put("score", getScore());
+            }
         } else {
-            //wrong answer
-            payloadForServer.put("text", "NOPE! you got it wrong!\nGuess again!");
-            //score stays the same, number of guesses goes up
-            setNumberOfGuesses(getNumberOfGuesses() + 1);
+            payloadForServer.put("text", "You won!!!!");
             payloadForServer.put("score", getScore());
+            setGameOver(true);
         }
+
 
         return payloadForServer;
     }
@@ -118,5 +126,21 @@ public class GameLogic {
 
     public void setGuessWasCorrect(boolean guessWasCorrect) {
         this.guessWasCorrect = guessWasCorrect;
+    }
+
+    public boolean isGameOver() {
+        return gameOver;
+    }
+
+    public void setGameOver(boolean gameOver) {
+        this.gameOver = gameOver;
+    }
+
+    public int getCorrectGuesses() {
+        return correctGuesses;
+    }
+
+    public void setCorrectGuesses(int correctGuesses) {
+        this.correctGuesses = correctGuesses;
     }
 }
