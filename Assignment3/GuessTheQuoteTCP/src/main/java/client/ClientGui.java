@@ -128,7 +128,7 @@ public class ClientGui implements client.OutputPanel.EventHandlers {
   @Override
   public void submitClicked() {
     // An example how to update the points in the UI
-    outputPanel.setPoints(10);
+    //outputPanel.setPoints(10);
 
     // Pulls the input box text
     String input = outputPanel.getInputText();
@@ -196,6 +196,8 @@ public class ClientGui implements client.OutputPanel.EventHandlers {
       JSONObject payloadJSON = (JSONObject) jsonObj.get("payload");
       Map header = headerJSON.toMap();
       Map payload = payloadJSON.toMap();
+
+      outputPanel.setPoints((Integer) payload.get("score"));
       ImageIcon image = decodeImage((String) payload.get("image"));
       insertImage(image, 0 ,0);
 

@@ -21,6 +21,7 @@ public class Server {
     private int imgChoice;
     private int state;
     boolean gameOver = false;
+    GameLogic gameLogic = null;
 
     public Server() {
         this.setState(0);
@@ -36,7 +37,6 @@ public class Server {
         Socket clientSocket = null;
         int port = 8080;
         int sleepDelay = 10000;
-        chooseQuote();
 
         if (args.length > 1) {
             System.out.println("Expected one argument: <port(int)>");
@@ -109,11 +109,12 @@ public class Server {
             //setState((int) header.get("state"));
             String reply = ((String) payload.get("text"));
             setPayloadFromClient(reply.toLowerCase(Locale.ROOT));
+            System.out.println("[RECEIVE FROM CLIENT] " + getPayloadFromClient());
 
 
         } catch (Exception e) {
             e.printStackTrace();
-            System.out.println("Error receiving from server");
+            System.out.println("Error receiving from client");
         }
     }
 
@@ -132,6 +133,7 @@ public class Server {
                 objHeader.put("ok", true);
                 objPayload.put("text", message);
                 objPayload.put("image", imageToSend);
+                objPayload.put("score", 0);
                 setState(getState() + 1);
                 break;
             case 2:
@@ -144,17 +146,22 @@ public class Server {
                 objHeader.put("ok", true);
                 objPayload.put("text", reply);
                 objPayload.put("image", imageToSend);
+                objPayload.put("score", 0);
                 setState(getState() + 1);
                 break;
             case 3:
                 // Ask if client wants to see the leaderboard or start the game
                 if (getPayloadFromClient().equals("start")) {
+                    if (gameLogic == null) {
+                        gameLogic = new GameLogic();
+                    }
                     imageToSend = encodeImage("quote");
                     objHeader.put("state", state);
                     objHeader.put("type", "text");
                     objHeader.put("ok", true);
                     objPayload.put("text", "Who said the quote?");
                     objPayload.put("image", imageToSend);
+                    objPayload.put("score", 0);
                     setState(getState() + 1);
                     break;
                 } else if (getPayloadFromClient().equals("leader")) {
@@ -164,6 +171,7 @@ public class Server {
                     objHeader.put("ok", true);
                     //objPayload.put("text", getLeaderboard());
                     objPayload.put("image", imageToSend);
+                    objPayload.put("score", gameLogic.getScore());
                     setState(6);
                     break;
                 } else {
@@ -173,11 +181,22 @@ public class Server {
                     objHeader.put("ok", false);
                     objPayload.put("text", "Sorry I didn't understand that. Please enter start or leader");
                     objPayload.put("image", imageToSend);
+                    objPayload.put("score", gameLogic.getScore());
                     break;
                 }
             case 4:
                 //actual gameplay -- server expects a name, more, or next
-                //gameLogic(message);
+                if (gameLogic == null) {
+                    gameLogic = new GameLogic();
+                    System.out.println("THIS SHOULD NEVER HAPPEN");
+                }
+                imageToSend = encodeImage("quote");
+                objHeader.put("state", state);
+                objHeader.put("type", "text");
+                objHeader.put("ok", true);
+                objPayload = gameLogic.checkAnswer(message);
+                objPayload.put("image", imageToSend);
+
                 break;
 
             default:
@@ -187,6 +206,7 @@ public class Server {
                 objHeader.put("ok", false);
                 objPayload.put("text", "ERROR ERROR ERROR");
                 objPayload.put("image", imageToSend);
+                objPayload.put("score", gameLogic.getScore());
                 setState(7);
                 break;
         }
@@ -196,29 +216,21 @@ public class Server {
         return objectToSend;
     }
 
-    public void gameLogic(String message) {
-        String character = getCharChoice().toLowerCase(Locale.ROOT);
-
-
-    }
-
     public String chooseQuote() {
         String[] characters = {"Captain_America", "Darth_Vader", "Homer_Simpson", "Jack_Sparrow",
                                 "Joker", "Tony_Stark", "Wolverine"};
         Random rand = new Random();
         int randomCharacter = rand.nextInt(7);
         int randomNumber = rand.nextInt(4) + 1;
+        System.out.println("[CHOOSE QUOTE] " + characters[randomCharacter]);
 
-        saveChoices(characters[randomCharacter], randomNumber);
+        gameLogic.saveChoices(characters[randomCharacter], randomNumber);
         String filename = "src/main/resources/img/" + characters[randomCharacter] + "/quote" + randomNumber + ".png";
 
         return filename;
     }
 
-    public void saveChoices(String character, int number) {
-        setCharChoice(character.replaceAll("_", " "));
-        setImgChoice(number);
-    }
+
 
     public String encodeImage(String imageType) throws IOException {
         String encodedImage;
