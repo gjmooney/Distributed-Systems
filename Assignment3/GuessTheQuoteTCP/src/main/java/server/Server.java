@@ -11,11 +11,14 @@ import java.net.Socket;
 import java.util.Base64;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Random;
 
 
 public class Server {
     private String payloadFromClient;
     private String status;
+    private String charChoice;
+    private int imgChoice;
     private int state;
     boolean gameOver = false;
 
@@ -23,31 +26,6 @@ public class Server {
         this.setState(0);
         this.setPayloadFromClient("");
         this.status = "";
-    }
-
-    public String getPayloadFromClient() {
-        return payloadFromClient;
-    }
-
-    public void setPayloadFromClient(String payloadFromClient) {
-        this.payloadFromClient = payloadFromClient;
-    }
-
-    public String getStatus() {
-        return status;
-    }
-
-    public void setStatus(String status) {
-        this.status = status;
-    }
-
-    public int getState() {
-        System.out.println("STATE: " + state);
-        return state;
-    }
-
-    public void setState(int state) {
-        this.state = state;
     }
 
     public void run(String[] args) throws IOException {
@@ -58,6 +36,7 @@ public class Server {
         Socket clientSocket = null;
         int port = 8080;
         int sleepDelay = 10000;
+        chooseQuote();
 
         if (args.length > 1) {
             System.out.println("Expected one argument: <port(int)>");
@@ -76,7 +55,6 @@ public class Server {
             serverSock = new ServerSocket(port);
             setState(1);
             while (true) {
-                System.out.println("COUNT THIS");
                 clientSocket = null;
                 try {
                     JSONObject sendToClient = null;
@@ -91,10 +69,8 @@ public class Server {
                     outputStream.writeObject(sendToClient.toString());
 
                     while (true) {
-                        //TODO increment state for every call
                         Object fromClient = inputStream.readObject();
                         receiveFromClient((String) fromClient);
-                        //TODO add extra logic in create response for state 3, maybe increment in createResponse
                         sendToClient = createResponse(getState(), getPayloadFromClient());
                         outputStream.writeObject(sendToClient.toString());
 
@@ -123,8 +99,6 @@ public class Server {
     }
 
     public void receiveFromClient(String jsonData) {
-        System.out.println("JSON server receive: " + jsonData);
-
         try {
             JSONTokener jsonTokener = new JSONTokener(jsonData);
             JSONObject namePrompt = new JSONObject(jsonTokener);
@@ -141,11 +115,9 @@ public class Server {
             e.printStackTrace();
             System.out.println("Error receiving from server");
         }
-
-
     }
 
-    //send a response to the client
+    //create a response to send to the client
     public JSONObject createResponse(int state, String message) throws IOException {
         JSONObject objectToSend = new JSONObject();
         JSONObject objHeader = new JSONObject();
@@ -164,60 +136,88 @@ public class Server {
                 break;
             case 2:
                 // Greet client by name
+                imageToSend = encodeImage("hi");
                 String reply = "Hello " + message + ". Do you want to see the " +
                            "leaderboard or start the game?";
                 objHeader.put("state", state);
                 objHeader.put("type", "text");
                 objHeader.put("ok", true);
                 objPayload.put("text", reply);
+                objPayload.put("image", imageToSend);
                 setState(getState() + 1);
                 break;
             case 3:
                 // Ask if client wants to see the leaderboard or start the game
                 if (getPayloadFromClient().equals("start")) {
+                    imageToSend = encodeImage("quote");
                     objHeader.put("state", state);
                     objHeader.put("type", "text");
                     objHeader.put("ok", true);
                     objPayload.put("text", "Who said the quote?");
+                    objPayload.put("image", imageToSend);
                     setState(getState() + 1);
                     break;
                 } else if (getPayloadFromClient().equals("leader")) {
+                    imageToSend = encodeImage("question");
                     objHeader.put("state", state);
                     objHeader.put("type", "text");
                     objHeader.put("ok", true);
                     //objPayload.put("text", getLeaderboard());
+                    objPayload.put("image", imageToSend);
                     setState(6);
                     break;
                 } else {
+                    imageToSend = encodeImage("question");
                     objHeader.put("state", state);
                     objHeader.put("type", "text");
                     objHeader.put("ok", false);
                     objPayload.put("text", "Sorry I didn't understand that. Please enter start or leader");
+                    objPayload.put("image", imageToSend);
                     break;
                 }
             case 4:
                 //actual gameplay -- server expects a name, more, or next
-                //gameLogic();
+                //gameLogic(message);
                 break;
 
             default:
+                imageToSend = encodeImage("question");
                 objHeader.put("state", state);
                 objHeader.put("type", "text");
                 objHeader.put("ok", false);
                 objPayload.put("text", "ERROR ERROR ERROR");
+                objPayload.put("image", imageToSend);
                 setState(7);
                 break;
         }
         objectToSend.put("header", objHeader);
         objectToSend.put("payload", objPayload);
-        System.out.println("JSON on server" + objectToSend + "\n");
-
 
         return objectToSend;
     }
 
-    public void gameLogic() {
+    public void gameLogic(String message) {
+        String character = getCharChoice().toLowerCase(Locale.ROOT);
 
+
+    }
+
+    public String chooseQuote() {
+        String[] characters = {"Captain_America", "Darth_Vader", "Homer_Simpson", "Jack_Sparrow",
+                                "Joker", "Tony_Stark", "Wolverine"};
+        Random rand = new Random();
+        int randomCharacter = rand.nextInt(7);
+        int randomNumber = rand.nextInt(4) + 1;
+
+        saveChoices(characters[randomCharacter], randomNumber);
+        String filename = "src/main/resources/img/" + characters[randomCharacter] + "/quote" + randomNumber + ".png";
+
+        return filename;
+    }
+
+    public void saveChoices(String character, int number) {
+        setCharChoice(character.replaceAll("_", " "));
+        setImgChoice(number);
     }
 
     public String encodeImage(String imageType) throws IOException {
@@ -226,6 +226,11 @@ public class Server {
         if (imageType.equals("hi")) {
             file = new File("src/main/resources/img/hi.png");
 
+        } else if(imageType.equals("question")) {
+            file = new File("src/main/resources/img/questions.jpg");
+        } else if(imageType.equals("quote")) {
+            String filename = chooseQuote();
+            file = new File(filename);
         } else {
             file = new File("/nope");
         }
@@ -247,8 +252,6 @@ public class Server {
         return "Unable to encode image";
     }
 
-
-
     public static void main(String[] args) throws IOException {
         Server mainServer = new Server();
         try {
@@ -259,5 +262,46 @@ public class Server {
             System.out.println("Yo your server broke bruh");
             System.exit(1);
         }
+    }
+
+    public String getPayloadFromClient() {
+        return payloadFromClient;
+    }
+
+    public void setPayloadFromClient(String payloadFromClient) {
+        this.payloadFromClient = payloadFromClient;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
+    public int getState() {
+        System.out.println("STATE: " + state);
+        return state;
+    }
+
+    public void setState(int state) {
+        this.state = state;
+    }
+
+    public String getCharChoice() {
+        return charChoice;
+    }
+
+    public void setCharChoice(String charChoice) {
+        this.charChoice = charChoice;
+    }
+
+    public int getImgChoice() {
+        return imgChoice;
+    }
+
+    public void setImgChoice(int imgChoice) {
+        this.imgChoice = imgChoice;
     }
 }

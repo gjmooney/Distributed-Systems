@@ -196,7 +196,6 @@ public class ClientGui implements client.OutputPanel.EventHandlers {
       JSONObject payloadJSON = (JSONObject) jsonObj.get("payload");
       Map header = headerJSON.toMap();
       Map payload = payloadJSON.toMap();
-      System.out.println("JSON in client receive " + jsonObj);
       ImageIcon image = decodeImage((String) payload.get("image"));
       insertImage(image, 0 ,0);
 
@@ -217,21 +216,6 @@ public class ClientGui implements client.OutputPanel.EventHandlers {
       JSONObject objectToSend = new JSONObject();
       JSONObject objHeader = new JSONObject();
       JSONObject objPayload = new JSONObject();
-      /*switch (state) {
-        case 1:
-          objHeader.put("state", state);
-          objHeader.put("type", "text");
-          objHeader.put("status", "nameReply");
-          objHeader.put("ok", true);
-          objPayload.put("text", message);
-          break;
-        default:
-          objHeader.put("state", 5);
-          objHeader.put("type", "text");
-          objHeader.put("ok", false);
-          objPayload.put("text", "ERROR ERROR ERROR");
-          break;
-      }*/
       objHeader.put("state", state);
       objHeader.put("type", "text");
       //objHeader.put("status", "nameReply");
@@ -240,7 +224,6 @@ public class ClientGui implements client.OutputPanel.EventHandlers {
 
       objectToSend.put("header", objHeader);
       objectToSend.put("payload", objPayload);
-      System.out.println("JSON on client" + objectToSend);
 
       outputStream.writeObject(objectToSend.toString());
 
@@ -279,11 +262,8 @@ public class ClientGui implements client.OutputPanel.EventHandlers {
     try {
      // main.show(true);
       while (true) {
-        System.out.println("first while");
         main.receiveFromServer();
-        System.out.println("second while");
         main.show(false);
-        System.out.println("DOES THIS HAPPEN");
 
       }
     } catch (Exception e) {
