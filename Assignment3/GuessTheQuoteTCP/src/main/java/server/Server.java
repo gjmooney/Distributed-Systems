@@ -22,6 +22,7 @@ public class Server {
     private int state;
     boolean gameOver = false;
     GameLogic gameLogic = null;
+    private String prevImage;
 
     public Server() {
         this.setState(0);
@@ -153,6 +154,7 @@ public class Server {
                 // Ask if client wants to see the leaderboard or start the game
                 if (getPayloadFromClient().equals("start")) {
                     if (gameLogic == null) {
+                        System.out.println("Server: Creating game logic");
                         gameLogic = new GameLogic();
                     }
                     imageToSend = encodeImage("quote");
@@ -162,6 +164,7 @@ public class Server {
                     objPayload.put("text", "Who said the quote?");
                     objPayload.put("image", imageToSend);
                     objPayload.put("score", 0);
+                    setPrevImage(imageToSend);
                     setState(getState() + 1);
                     break;
                 } else if (getPayloadFromClient().equals("leader")) {
@@ -190,11 +193,17 @@ public class Server {
                     gameLogic = new GameLogic();
                     System.out.println("THIS SHOULD NEVER HAPPEN");
                 }
-                imageToSend = encodeImage("quote");
+
                 objHeader.put("state", state);
                 objHeader.put("type", "text");
                 objHeader.put("ok", true);
                 objPayload = gameLogic.checkAnswer(message);
+                if (gameLogic.isChangeQuote()) {
+                    imageToSend = encodeImage("quote");
+
+                } else {
+                    imageToSend = getPrevImage();
+                }
                 objPayload.put("image", imageToSend);
 
                 break;
@@ -315,5 +324,13 @@ public class Server {
 
     public void setImgChoice(int imgChoice) {
         this.imgChoice = imgChoice;
+    }
+
+    public String getPrevImage() {
+        return prevImage;
+    }
+
+    public void setPrevImage(String prevImage) {
+        this.prevImage = prevImage;
     }
 }
