@@ -29,6 +29,9 @@ public class GameLogic {
             System.out.println("checkAnswer: correct");
             setNumberOfGuesses(0);
             setCorrectGuesses(getCorrectGuesses() + 1);
+            if (getCorrectGuesses() == 3) {
+                setGameOver(true);
+            }
         } else {
             setGuessWasCorrect(false);
             setNumberOfGuesses(getNumberOfGuesses() + 1);
@@ -42,7 +45,7 @@ public class GameLogic {
         System.out.println("[ANSWER] " + getQuoteCharacter());
         System.out.println("[GUESS] " + answerFromClient);
 
-        if (getCorrectGuesses() < 3) {
+        if (!isGameOver()) {
             if (isGuessWasCorrect()) {
                 //correct answer
                 payloadForServer.put("text", "You got it right!");
@@ -55,7 +58,6 @@ public class GameLogic {
         } else {
             payloadForServer.put("text", "You won!!!!");
             payloadForServer.put("score", getScore());
-            setGameOver(true);
         }
 
 

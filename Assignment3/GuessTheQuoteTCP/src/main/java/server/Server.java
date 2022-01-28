@@ -74,6 +74,8 @@ public class Server {
                         receiveFromClient((String) fromClient);
                         sendToClient = createResponse(getState(), getPayloadFromClient());
                         outputStream.writeObject(sendToClient.toString());
+                        outputStream.flush();
+                        //TODO flush the out? idk
 
                         System.out.println("SERVER: END OF WHILE");
                     }
@@ -81,7 +83,7 @@ public class Server {
                     e.printStackTrace();
                     System.out.println("Client disconnected");
                 } finally {
-                    if (clientSocket == null) {
+                    if (clientSocket != null) {
                         System.out.println("Closing client socket");
                         clientSocket.close();
                     }
@@ -198,7 +200,6 @@ public class Server {
                 objPayload = gameLogic.buildResponse(message);
 
                 // get a new quote if the guess was correct else use the previous quote
-                //TODO nest this if in another if that checks if game is over, put the win/lose pic there
                 if (!gameLogic.isGameOver()) {
                     if (gameLogic.isGuessWasCorrect()) {
                         imageToSend = encodeImage("quote");
