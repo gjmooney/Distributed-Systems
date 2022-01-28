@@ -20,6 +20,7 @@ public class Server {
     private String charChoice;
     private int imgChoice;
     private int state;
+    private int characterIndex;
     boolean gameOver = false;
     GameLogic gameLogic = null;
     private String prevImage;
@@ -190,7 +191,6 @@ public class Server {
                 }
             case 4:
                 //actual gameplay -- server expects a name, more, or next
-
                 if (getPayloadFromClient().equals("more")) {
                     //get another quote form the same character
                     int quoteNum = gameLogic.getQuoteNumber();
@@ -207,6 +207,14 @@ public class Server {
                         imageToSend = getPrevImage();
                     }
                     objPayload.put("score", gameLogic.getScore());
+                    objPayload.put("image", imageToSend);
+                } else if (getPayloadFromClient().equals("next")) {
+                    objHeader.put("state", state);
+                    objHeader.put("type", "text");
+                    objHeader.put("ok", true);
+                    imageToSend = encodeImage("quote");
+                    objPayload.put("score", gameLogic.getScore());
+                    objPayload.put("text", "Okay! Here's another one!");
                     objPayload.put("image", imageToSend);
                 } else {
                     // check if the answer is right and set the boolean in gameLogic
@@ -236,8 +244,6 @@ public class Server {
                     // finish building JSON reply
                     objPayload.put("image", imageToSend);
                 }
-
-
                 break;
 
             default:
@@ -257,17 +263,21 @@ public class Server {
         return objectToSend;
     }
 
-    public String chooseCharacterAndQuote() {
+    public String chooseCharacterAndQuote(boolean first) {
         String[] characters = {"Captain_America", "Darth_Vader", "Homer_Simpson", "Jack_Sparrow",
                                 "Joker", "Tony_Stark", "Wolverine"};
-        Random rand = new Random();
-        int randomCharacter = rand.nextInt(7);
-        int quoteNumber = gameLogic.getQuoteNumber(characters[randomCharacter]);
-        System.out.println("[CHOOSE QUOTE] " + characters[randomCharacter]);
-        System.out.println("[QUOTE NUMBER] " + quoteNumber);
 
-        gameLogic.saveChoices(characters[randomCharacter], quoteNumber);
-        String filename = "src/main/resources/img/" + characters[randomCharacter]
+        if (first) {
+            Random rand = new Random();
+            characterIndex = rand.nextInt(7);
+        } else {
+            characterIndex = (characterIndex + 1) % 7;
+        }
+
+        int quoteNumber = gameLogic.getQuoteNumber(characters[characterIndex]);
+
+        gameLogic.saveChoices(characters[characterIndex], quoteNumber);
+        String filename = "src/main/resources/img/" + characters[characterIndex]
                 + "/quote" + quoteNumber + ".png";
 
         return filename;
@@ -293,7 +303,12 @@ public class Server {
             file = new File("src/main/resources/img/questions.jpg");
 
         } else if(imageType.equals("quote")) {
-            String filename = chooseCharacterAndQuote();
+            String filename;
+            if (getState() == 3) {
+                filename = chooseCharacterAndQuote(true);
+            } else {
+                filename = chooseCharacterAndQuote(false);
+            }
             file = new File(filename);
 
         } else if (imageType.equals("more")) {
