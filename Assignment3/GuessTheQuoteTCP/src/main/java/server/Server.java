@@ -200,6 +200,7 @@ public class Server {
                     if (quoteNum < 4) {
                         objPayload.put("text", "Here's another quote from that character");
                         imageToSend = encodeImage("more");
+                        gameLogic.setNumberOfGuesses(gameLogic.getNumberOfGuesses() + 1);
                     } else {
                         objPayload.put("text", "This is the last quote!\nThe character is in the picture," +
                                 " you can do it!");
