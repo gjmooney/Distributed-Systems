@@ -2,7 +2,9 @@ package server;
 
 import org.json.JSONObject;
 
+import java.util.HashMap;
 import java.util.Locale;
+import java.util.Stack;
 
 public class GameLogic {
     private int score;
@@ -12,6 +14,7 @@ public class GameLogic {
     private String quoteCharacter;
     private boolean guessWasCorrect;
     private boolean gameOver;
+    private HashMap<String, Integer> characterMap;
 
     public GameLogic() {
         this.score = 0;
@@ -20,10 +23,35 @@ public class GameLogic {
         this.quoteCharacter = "";
         this.guessWasCorrect = false;
         this.correctGuesses = 0;
+        initMap();
+    }
+
+    public void initMap() {
+        // just for convenience
+        characterMap = new HashMap<>();
+        String[] characters = {"Captain_America", "Darth_Vader", "Homer_Simpson", "Jack_Sparrow",
+                "Joker", "Tony_Stark", "Wolverine"};
+        // add names to map
+        for (String character: characters ) {
+            characterMap.put(character, 1);
+        }
+    }
+
+    public int getQuoteNumber(String character) {
+        System.out.println("[getQuoteNumber] " + characterMap);
+        int quoteNum = characterMap.get(character);
+        if (quoteNum < 4) {
+            characterMap.put(character, ++quoteNum);
+        }
+        return quoteNum;
     }
 
     public void checkAnswer(String answerFromClient) {
-        if (answerFromClient.equals(getQuoteCharacter())) {
+        String formatClientAnswer = answerFromClient.toLowerCase(Locale.ROOT);
+        String formatCorrectAnswer = getQuoteCharacter().replaceAll("_", " ")
+                .toLowerCase(Locale.ROOT);
+        System.out.println("client: " + formatClientAnswer + " correct: " + formatCorrectAnswer);
+        if (formatClientAnswer.equals(formatCorrectAnswer)) {
             setGuessWasCorrect(true);
             changeScore();
             System.out.println("checkAnswer: correct");
@@ -41,9 +69,6 @@ public class GameLogic {
 
     public JSONObject buildResponse(String answerFromClient) {
         JSONObject payloadForServer = new JSONObject();
-        System.out.println("[CHECK ANSWER]");
-        System.out.println("[ANSWER] " + getQuoteCharacter());
-        System.out.println("[GUESS] " + answerFromClient);
 
         if (!isGameOver()) {
             if (isGuessWasCorrect()) {
@@ -84,8 +109,7 @@ public class GameLogic {
     }
 
     public void saveChoices(String character, int number) {
-        //save the character in lower case with no underscores, should be what client sends
-        setQuoteCharacter(character.replaceAll("_", " ").toLowerCase(Locale.ROOT));
+        setQuoteCharacter(character);
         setQuoteNumber(number);
         System.out.println("Game Logic: Saved char: " + getQuoteCharacter());
     }

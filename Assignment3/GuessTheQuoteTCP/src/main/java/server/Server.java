@@ -111,7 +111,7 @@ public class Server {
             Map payload = payloadJSON.toMap();
             //setState((int) header.get("state"));
             String reply = ((String) payload.get("text"));
-            setPayloadFromClient(reply.toLowerCase(Locale.ROOT));
+            setPayloadFromClient(reply);
             System.out.println("[RECEIVE FROM CLIENT] " + getPayloadFromClient());
 
 
@@ -190,32 +190,52 @@ public class Server {
                 }
             case 4:
                 //actual gameplay -- server expects a name, more, or next
-                // check if the answer is right and set the boolean in gameLogic
-                gameLogic.checkAnswer(message);
 
-                // start building JSON reply
-                objHeader.put("state", state);
-                objHeader.put("type", "text");
-                objHeader.put("ok", true);
-                objPayload = gameLogic.buildResponse(message);
-
-                // get a new quote if the guess was correct else use the previous quote
-                if (!gameLogic.isGameOver()) {
-                    if (gameLogic.isGuessWasCorrect()) {
-                        imageToSend = encodeImage("quote");
-
+                if (getPayloadFromClient().equals("more")) {
+                    //get another quote form the same character
+                    int quoteNum = gameLogic.getQuoteNumber();
+                    objHeader.put("state", state);
+                    objHeader.put("type", "text");
+                    objHeader.put("ok", true);
+                    if (quoteNum < 4) {
+                        objPayload.put("text", "Here's another quote from that character");
+                        imageToSend = encodeImage("more");
                     } else {
+                        objPayload.put("text", "This is the last quote!\nThe character is in the picture," +
+                                " you can do it!");
                         imageToSend = getPrevImage();
                     }
-                } else if (gameLogic.getCorrectGuesses() == 3) {
-                    imageToSend = encodeImage("win");
+                    objPayload.put("score", gameLogic.getScore());
+                    objPayload.put("image", imageToSend);
                 } else {
-                    imageToSend = encodeImage("lose");
+                    // check if the answer is right and set the boolean in gameLogic
+                    gameLogic.checkAnswer(message);
+
+                    // start building JSON reply
+                    objHeader.put("state", state);
+                    objHeader.put("type", "text");
+                    objHeader.put("ok", true);
+                    objPayload = gameLogic.buildResponse(message);
+
+                    // get a new quote if the guess was correct else use the previous quote
+                    if (!gameLogic.isGameOver()) {
+                        if (gameLogic.isGuessWasCorrect()) {
+                            imageToSend = encodeImage("quote");
+
+                        } else {
+                            imageToSend = getPrevImage();
+                        }
+                    } else if (gameLogic.getCorrectGuesses() == 3) {
+                        imageToSend = encodeImage("win");
+                    } else {
+                        imageToSend = encodeImage("lose");
+                    }
+
+
+                    // finish building JSON reply
+                    objPayload.put("image", imageToSend);
                 }
 
-
-                // finish building JSON reply
-                objPayload.put("image", imageToSend);
 
                 break;
 
@@ -236,21 +256,30 @@ public class Server {
         return objectToSend;
     }
 
-    public String chooseQuote() {
+    public String chooseCharacterAndQuote() {
         String[] characters = {"Captain_America", "Darth_Vader", "Homer_Simpson", "Jack_Sparrow",
                                 "Joker", "Tony_Stark", "Wolverine"};
         Random rand = new Random();
         int randomCharacter = rand.nextInt(7);
-        int randomNumber = rand.nextInt(4) + 1;
+        int quoteNumber = gameLogic.getQuoteNumber(characters[randomCharacter]);
         System.out.println("[CHOOSE QUOTE] " + characters[randomCharacter]);
 
-        gameLogic.saveChoices(characters[randomCharacter], randomNumber);
-        String filename = "src/main/resources/img/" + characters[randomCharacter] + "/quote" + randomNumber + ".png";
+        gameLogic.saveChoices(characters[randomCharacter], quoteNumber);
+        String filename = "src/main/resources/img/" + characters[randomCharacter]
+                + "/quote" + quoteNumber + ".png";
 
         return filename;
     }
 
+    public String chooseNewQuote() {
+        String character = gameLogic.getQuoteCharacter();
+        int quoteNumber = gameLogic.getQuoteNumber(character);
+        gameLogic.saveChoices(character, quoteNumber);
+        String filename = "src/main/resources/img/" + character
+                + "/quote" + quoteNumber + ".png";
 
+        return filename;
+    }
 
     public String encodeImage(String imageType) throws IOException {
         String encodedImage;
@@ -260,13 +289,21 @@ public class Server {
 
         } else if(imageType.equals("question")) {
             file = new File("src/main/resources/img/questions.jpg");
+
         } else if(imageType.equals("quote")) {
-            String filename = chooseQuote();
+            String filename = chooseCharacterAndQuote();
             file = new File(filename);
+
+        } else if (imageType.equals("more")) {
+            String filename = chooseNewQuote();
+            file = new File(filename);
+
         } else if (imageType.equals("win")) {
             file = new File("src/main/resources/img/win.jpg");
+
         } else if (imageType.equals("lose")) {
             file = new File("src/main/resources/img/lose.jpg");
+
         } else {
             file = new File("/nope");
         }
