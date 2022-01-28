@@ -263,6 +263,7 @@ public class Server {
         int randomCharacter = rand.nextInt(7);
         int quoteNumber = gameLogic.getQuoteNumber(characters[randomCharacter]);
         System.out.println("[CHOOSE QUOTE] " + characters[randomCharacter]);
+        System.out.println("[QUOTE NUMBER] " + quoteNumber);
 
         gameLogic.saveChoices(characters[randomCharacter], quoteNumber);
         String filename = "src/main/resources/img/" + characters[randomCharacter]

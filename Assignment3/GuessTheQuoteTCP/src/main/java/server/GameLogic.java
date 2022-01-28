@@ -40,8 +40,9 @@ public class GameLogic {
     public int getQuoteNumber(String character) {
         System.out.println("[getQuoteNumber] " + characterMap);
         int quoteNum = characterMap.get(character);
+        System.out.println("[etuoteNum] " + characterMap.get(character) + "saved num " + quoteNum);
         if (quoteNum < 4) {
-            characterMap.put(character, ++quoteNum);
+            characterMap.put(character, quoteNum + 1);
         }
         return quoteNum;
     }
