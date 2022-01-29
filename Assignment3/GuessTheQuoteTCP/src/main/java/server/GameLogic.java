@@ -68,28 +68,6 @@ public class GameLogic {
         }
     }
 
-    public JSONObject buildResponse(String answerFromClient) {
-        JSONObject payloadForServer = new JSONObject();
-
-        if (!isGameOver()) {
-            if (isGuessWasCorrect()) {
-                //correct answer
-                payloadForServer.put("text", "You got it right!");
-                payloadForServer.put("score", getScore());
-            } else {
-                //wrong answer
-                payloadForServer.put("text", "NOPE! you got it wrong!\nGuess again!");
-                payloadForServer.put("score", getScore());
-            }
-        } else {
-            payloadForServer.put("text", "You won!!!!");
-            payloadForServer.put("score", getScore());
-        }
-
-
-        return payloadForServer;
-    }
-
     public void changeScore() {
         //5 points for first guess, 4 for second, 3 for third, 1 for rest
         switch (getNumberOfGuesses()) {

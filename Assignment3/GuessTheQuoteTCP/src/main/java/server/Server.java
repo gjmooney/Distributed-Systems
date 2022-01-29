@@ -4,6 +4,7 @@ import org.json.JSONObject;
 import org.json.JSONTokener;
 
 import javax.imageio.ImageIO;
+import javax.swing.*;
 import java.awt.image.BufferedImage;
 import java.io.*;
 import java.net.ServerSocket;
@@ -76,7 +77,6 @@ public class Server {
                         sendToClient = createResponse(getState(), getPayloadFromClient());
                         outputStream.writeObject(sendToClient.toString());
                         outputStream.flush();
-                        //TODO flush the out? idk
 
                         System.out.println("SERVER: END OF WHILE");
                     }
@@ -123,7 +123,7 @@ public class Server {
     }
 
     //create a response to send to the client
-    public JSONObject createResponse(int state, String message) throws IOException {
+    public JSONObject createResponse(int state, String textFromClient) throws IOException {
         JSONObject objectToSend = new JSONObject();
         JSONObject objHeader = new JSONObject();
         JSONObject objPayload = new JSONObject();
@@ -132,25 +132,17 @@ public class Server {
             case 1:
                 // Ask clients name
                 imageToSend = encodeImage("hi");
-                objHeader.put("state", state);
-                objHeader.put("type", "text");
-                objHeader.put("ok", true);
-                objPayload.put("text", message);
-                objPayload.put("image", imageToSend);
-                objPayload.put("score", 0);
+
+                // NOTE: Not text from client here but whatever
+                objectToSend = createJSONObject(true, state, imageToSend, textFromClient);
                 setState(getState() + 1);
                 break;
             case 2:
                 // Greet client by name
-                imageToSend = encodeImage("hi");
-                String reply = "Hello " + message + ". Do you want to see the " +
+                String reply = "Hello " + textFromClient + ". Do you want to see the " +
                            "leaderboard or start the game?";
-                objHeader.put("state", state);
-                objHeader.put("type", "text");
-                objHeader.put("ok", true);
-                objPayload.put("text", reply);
-                objPayload.put("image", imageToSend);
-                objPayload.put("score", 0);
+                imageToSend = encodeImage("hi");
+                objectToSend = createJSONObject(true, state, imageToSend, reply);
                 setState(getState() + 1);
                 break;
             case 3:
@@ -161,70 +153,62 @@ public class Server {
                         gameLogic = new GameLogic();
                     }
                     imageToSend = encodeImage("quote");
-                    objHeader.put("state", state);
-                    objHeader.put("type", "text");
-                    objHeader.put("ok", true);
-                    objPayload.put("text", "Who said the quote?");
-                    objPayload.put("image", imageToSend);
-                    objPayload.put("score", 0);
+                    String response = "Who said the quote?";
+                    objectToSend = createJSONObject(true, state, imageToSend, response);
                     setState(getState() + 1);
                     break;
                 } else if (getPayloadFromClient().equals("leader")) {
                     imageToSend = encodeImage("question");
-                    objHeader.put("state", state);
-                    objHeader.put("type", "text");
-                    objHeader.put("ok", true);
-                    //objPayload.put("text", getLeaderboard());
-                    objPayload.put("image", imageToSend);
-                    objPayload.put("score", gameLogic.getScore());
+                    String response = "Here's the leaderboard";
+                    objectToSend = createJSONObject(true, state, imageToSend, response);
                     setState(6);
                     break;
                 } else {
+                    String response = "Sorry I didn't understand that. Please enter start or leader";
                     imageToSend = encodeImage("question");
-                    objHeader.put("state", state);
-                    objHeader.put("type", "text");
-                    objHeader.put("ok", false);
-                    objPayload.put("text", "Sorry I didn't understand that. Please enter start or leader");
-                    objPayload.put("image", imageToSend);
-                    objPayload.put("score", gameLogic.getScore());
+                    objectToSend = createJSONObject(true, state, imageToSend, response);
                     break;
                 }
             case 4:
                 //actual gameplay -- server expects a name, more, or next
                 if (getPayloadFromClient().equals("more")) {
                     //get another quote form the same character
+                    String response;
                     int quoteNum = gameLogic.getQuoteNumber();
-                    objHeader.put("state", state);
-                    objHeader.put("type", "text");
-                    objHeader.put("ok", true);
                     if (quoteNum < 4) {
-                        objPayload.put("text", "Here's another quote from that character");
+                        response = "Here's another quote from that character";
                         imageToSend = encodeImage("more");
                         gameLogic.setNumberOfGuesses(gameLogic.getNumberOfGuesses() + 1);
                     } else {
-                        objPayload.put("text", "This is the last quote!\nThe character is in the picture," +
-                                " you can do it!");
+                        response = "This is the last quote!\nThe character is in the picture," +
+                                " you can do it!";
                         imageToSend = getPrevImage();
                     }
-                    objPayload.put("score", gameLogic.getScore());
                     objPayload.put("image", imageToSend);
+                    objectToSend = createJSONObject(true, state, imageToSend, response);
                 } else if (getPayloadFromClient().equals("next")) {
-                    objHeader.put("state", state);
-                    objHeader.put("type", "text");
-                    objHeader.put("ok", true);
                     imageToSend = encodeImage("quote");
-                    objPayload.put("score", gameLogic.getScore());
-                    objPayload.put("text", "Okay! Here's another one!");
-                    objPayload.put("image", imageToSend);
+                    String response = "Okay! Here's another one!";
+                    objectToSend = createJSONObject(true, state, imageToSend, response);
                 } else {
                     // check if the answer is right and set the boolean in gameLogic
-                    gameLogic.checkAnswer(message);
+                    gameLogic.checkAnswer(textFromClient);
 
-                    // start building JSON reply
-                    objHeader.put("state", state);
-                    objHeader.put("type", "text");
-                    objHeader.put("ok", true);
-                    objPayload = gameLogic.buildResponse(message);
+                    //TODO can combine these ifs but thats maybe bad actually
+                    String response;
+                    if (!gameLogic.isGameOver()) {
+                        if (gameLogic.isGuessWasCorrect()) {
+                            //correct answer
+                            response =  "You got it right!";
+                        } else {
+                            //wrong answer
+                            response = "NOPE! you got it wrong!\nGuess again!";
+                        }
+                    } else if (gameLogic.getCorrectGuesses() == 3) {
+                        response = "You won!!!!";
+                    } else {
+                        response = "Sorry, you lose";
+                    }
 
                     // get a new quote if the guess was correct else use the previous quote
                     if (!gameLogic.isGameOver()) {
@@ -240,27 +224,41 @@ public class Server {
                         imageToSend = encodeImage("lose");
                     }
 
-
-                    // finish building JSON reply
-                    objPayload.put("image", imageToSend);
+                    objectToSend = createJSONObject(true, state, imageToSend, response);
                 }
                 break;
 
             default:
                 imageToSend = encodeImage("question");
-                objHeader.put("state", state);
-                objHeader.put("type", "text");
-                objHeader.put("ok", false);
-                objPayload.put("text", "ERROR ERROR ERROR");
-                objPayload.put("image", imageToSend);
-                objPayload.put("score", gameLogic.getScore());
+                String response = "ERROR ERROR EROOR";
+                objectToSend = createJSONObject(false, state, imageToSend, response);
                 setState(7);
                 break;
         }
-        objectToSend.put("header", objHeader);
-        objectToSend.put("payload", objPayload);
-
         return objectToSend;
+    }
+
+    public JSONObject createJSONObject(boolean ok, int state, String image, String text) {
+        JSONObject header = new JSONObject();
+        JSONObject payload = new JSONObject();
+        JSONObject JSONToSend = new JSONObject();
+
+        header.put("state", state);
+        header.put("type", "JSON");
+        header.put("ok", ok);
+
+        payload.put("image", image);
+        if (state == 1 || state == 2) {
+            payload.put("score", 0);
+        } else {
+            payload.put("score", gameLogic.getScore());
+        }
+        payload.put("text", text);
+
+        JSONToSend.put("header", header);
+        JSONToSend.put("payload", payload);
+
+        return JSONToSend;
     }
 
     public String chooseCharacterAndQuote(boolean first) {
