@@ -4,15 +4,13 @@ import org.json.JSONObject;
 import org.json.JSONTokener;
 
 import javax.imageio.ImageIO;
-import javax.swing.*;
 import java.awt.image.BufferedImage;
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.Base64;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Random;
+import java.time.LocalTime;
+import java.time.temporal.ChronoUnit;
+import java.util.*;
 
 
 public class Server {
@@ -22,9 +20,11 @@ public class Server {
     private int imgChoice;
     private int state;
     private int characterIndex;
-    boolean gameOver = false;
-    GameLogic gameLogic = null;
+    private GameLogic gameLogic = null;
     private String prevImage;
+    private LocalTime timeLimit;
+    private LocalTime timeReceived;
+    private HashMap<String, Integer> playerNames;
 
     public Server() {
         this.setState(0);
@@ -111,8 +111,9 @@ public class Server {
             Map header = headerJSON.toMap();
             Map payload = payloadJSON.toMap();
             //setState((int) header.get("state"));
-            String reply = ((String) payload.get("text"));
-            setPayloadFromClient(reply);
+            //String reply = ((String) payload.get("text"));
+            setPayloadFromClient(((String) payload.get("text")));
+            timeReceived = LocalTime.now();
             System.out.println("[RECEIVE FROM CLIENT] " + getPayloadFromClient());
 
 
@@ -139,6 +140,10 @@ public class Server {
                 break;
             case 2:
                 // Greet client by name
+                //add player name to list for leaderboard if they're not already added
+                if (!playerNames.containsKey(textFromClient)) {
+                    playerNames.put(textFromClient, 0);
+                }
                 String reply = "Hello " + textFromClient + ". Do you want to see the " +
                            "leaderboard or start the game?";
                 imageToSend = encodeImage("hi");
@@ -155,6 +160,7 @@ public class Server {
                     imageToSend = encodeImage("quote");
                     String response = "Who said the quote?";
                     objectToSend = createJSONObject(true, state, imageToSend, response);
+                    timeLimit = LocalTime.now().plusMinutes(1);
                     setState(getState() + 1);
                     break;
                 } else if (getPayloadFromClient().equals("leader")) {
@@ -171,61 +177,72 @@ public class Server {
                 }
             case 4:
                 //actual gameplay -- server expects a name, more, or next
-                if (getPayloadFromClient().equals("more")) {
-                    //get another quote form the same character
-                    String response;
-                    int quoteNum = gameLogic.getQuoteNumber();
-                    if (quoteNum < 4) {
-                        response = "Here's another quote from that character";
-                        imageToSend = encodeImage("more");
-                        gameLogic.setNumberOfGuesses(gameLogic.getNumberOfGuesses() + 1);
-                    } else {
-                        response = "This is the last quote!\nThe character is in the picture," +
-                                " you can do it!";
-                        imageToSend = getPrevImage();
-                    }
-                    objPayload.put("image", imageToSend);
-                    objectToSend = createJSONObject(true, state, imageToSend, response);
-                } else if (getPayloadFromClient().equals("next")) {
-                    imageToSend = encodeImage("quote");
-                    String response = "Okay! Here's another one!";
-                    objectToSend = createJSONObject(true, state, imageToSend, response);
-                } else {
-                    // check if the answer is right and set the boolean in gameLogic
-                    gameLogic.checkAnswer(textFromClient);
-
-                    //TODO can combine these ifs but thats maybe bad actually
-                    String response;
-                    if (!gameLogic.isGameOver()) {
-                        if (gameLogic.isGuessWasCorrect()) {
-                            //correct answer
-                            response =  "You got it right!";
+                gameLogic.checkTimer(timeLimit, timeReceived);
+                if (!gameLogic.isGameOver()) {
+                    if (getPayloadFromClient().equals("more")) {
+                        //get another quote form the same character
+                        String response;
+                        int quoteNum = gameLogic.getQuoteNumber();
+                        if (quoteNum < 4) {
+                            response = "Here's another quote from that character";
+                            imageToSend = encodeImage("more");
+                            gameLogic.setNumberOfGuesses(gameLogic.getNumberOfGuesses() + 1);
                         } else {
-                            //wrong answer
-                            response = "NOPE! you got it wrong!\nGuess again!";
-                        }
-                    } else if (gameLogic.getCorrectGuesses() == 3) {
-                        response = "You won!!!!";
-                    } else {
-                        response = "Sorry, you lose";
-                    }
-
-                    // get a new quote if the guess was correct else use the previous quote
-                    if (!gameLogic.isGameOver()) {
-                        if (gameLogic.isGuessWasCorrect()) {
-                            imageToSend = encodeImage("quote");
-
-                        } else {
+                            response = "This is the last quote!\nThe character is in the picture," +
+                                    " you can do it!";
                             imageToSend = getPrevImage();
                         }
-                    } else if (gameLogic.getCorrectGuesses() == 3) {
-                        imageToSend = encodeImage("win");
-                    } else {
-                        imageToSend = encodeImage("lose");
-                    }
+                        objPayload.put("image", imageToSend);
+                        objectToSend = createJSONObject(true, state, imageToSend, response);
 
+                    } else if (getPayloadFromClient().equals("next")) {
+                        imageToSend = encodeImage("quote");
+                        String response = "Okay! Here's another one!";
+                        objectToSend = createJSONObject(true, state, imageToSend, response);
+
+                    } else {
+                        // check if the answer is right and set the boolean in gameLogic
+                        gameLogic.checkAnswer(textFromClient);
+
+                        //TODO can combine these ifs but thats maybe bad actually
+                        String response;
+                        if (!gameLogic.isGameOver()) {
+                            if (gameLogic.isGuessWasCorrect()) {
+                                //correct answer
+                                response =  "You got it right!";
+                            } else {
+                                //wrong answer
+                                response = "NOPE! you got it wrong!\nGuess again!";
+                            }
+                        } else if (gameLogic.getCorrectGuesses() == 3) {
+                            response = "You won!!!!";
+                        } else {
+                            response = "Sorry, you lose";
+                        }
+
+                        // get a new quote if the guess was correct else use the previous quote
+                        if (!gameLogic.isGameOver()) {
+                            if (gameLogic.isGuessWasCorrect()) {
+                                imageToSend = encodeImage("quote");
+
+                            } else {
+                                imageToSend = getPrevImage();
+                            }
+                        } else if (gameLogic.getCorrectGuesses() == 3) {
+                            imageToSend = encodeImage("win");
+                        } else {
+                            imageToSend = encodeImage("lose");
+                        }
+
+                        objectToSend = createJSONObject(true, state, imageToSend, response);
+                    }
+                } else {
+                    //ran out of time
+                    imageToSend = encodeImage("lose");
+                    String response = "Sorry, you ran out of time!";
                     objectToSend = createJSONObject(true, state, imageToSend, response);
                 }
+
                 break;
 
             default:
@@ -343,6 +360,10 @@ public class Server {
 
     public static void main(String[] args) throws IOException {
         Server mainServer = new Server();
+        LocalTime now = LocalTime.now();
+        System.out.println(now);
+        now.plusMinutes(1);
+        System.out.println(now.minus(60, ChronoUnit.SECONDS));
         try {
             mainServer.run(args);
 
@@ -400,5 +421,9 @@ public class Server {
 
     public void setPrevImage(String prevImage) {
         this.prevImage = prevImage;
+    }
+
+    public HashMap<String, Integer> getPlayerNames() {
+        return playerNames;
     }
 }

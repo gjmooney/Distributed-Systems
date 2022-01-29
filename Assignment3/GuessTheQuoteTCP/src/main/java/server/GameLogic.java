@@ -2,6 +2,7 @@ package server;
 
 import org.json.JSONObject;
 
+import java.time.LocalTime;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Stack;
@@ -66,6 +67,13 @@ public class GameLogic {
             setNumberOfGuesses(getNumberOfGuesses() + 1);
             System.out.println("checkAnswer: wrong");
         }
+    }
+
+    public void checkTimer(LocalTime timeLimit, LocalTime timeReceived) {
+        if (timeReceived.isAfter(timeLimit)) {
+            setGameOver(true);
+        }
+
     }
 
     public void changeScore() {
