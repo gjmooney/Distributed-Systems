@@ -16,6 +16,7 @@ public class GameLogic {
     private boolean guessWasCorrect;
     private boolean gameOver;
     private HashMap<String, Integer> characterMap;
+    private HashMap<String, Integer> leaderboard;
 
     public GameLogic() {
         this.score = 0;
@@ -24,6 +25,7 @@ public class GameLogic {
         this.quoteCharacter = "";
         this.guessWasCorrect = false;
         this.correctGuesses = 0;
+        this.leaderboard = new HashMap<>();
         initMap();
     }
 
@@ -67,6 +69,29 @@ public class GameLogic {
             setNumberOfGuesses(getNumberOfGuesses() + 1);
             System.out.println("checkAnswer: wrong");
         }
+    }
+
+    public void updateLeaderboard(String name) {
+        if (!leaderboard.containsKey(name)) {
+            // player not on board yet
+            leaderboard.put(name, getScore());
+        } else {
+            //player already on board
+            int oldScore = leaderboard.get(name);
+            leaderboard.put(name, oldScore + getScore());
+        }
+    }
+
+    public String displayLeaderboard() {
+        String message;
+        if (!leaderboard.isEmpty()) {
+            message = "Here's the leaderboard\n" + leaderboard.toString();
+        } else {
+            message = "There's nobody on the leaderboard yet! You're the first player!";
+        }
+
+        message += "\nEnter anything to continue...";
+        return message;
     }
 
     public void checkTimer(LocalTime timeLimit, LocalTime timeReceived) {
@@ -156,4 +181,10 @@ public class GameLogic {
     public void setCorrectGuesses(int correctGuesses) {
         this.correctGuesses = correctGuesses;
     }
+
+    public HashMap<String, Integer> getLeaderboard() {
+        return leaderboard;
+    }
+
+
 }

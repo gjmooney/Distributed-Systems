@@ -24,12 +24,15 @@ public class Server {
     private String prevImage;
     private LocalTime timeLimit;
     private LocalTime timeReceived;
-    private HashMap<String, Integer> playerNames;
+    private HashMap<String, Integer> leaderboard;
+    private String playerName;
+    private boolean firstTime = true;
 
     public Server() {
         this.setState(0);
         this.setPayloadFromClient("");
         this.status = "";
+        this.gameLogic = new GameLogic();
     }
 
     public void run(String[] args) throws IOException {
@@ -141,22 +144,20 @@ public class Server {
             case 2:
                 // Greet client by name
                 //add player name to list for leaderboard if they're not already added
-                if (!playerNames.containsKey(textFromClient)) {
-                    playerNames.put(textFromClient, 0);
+                if (firstTime) {
+                    playerName = textFromClient;
+
                 }
-                String reply = "Hello " + textFromClient + ". Do you want to see the " +
+                String reply = "Hello " + playerName + ". Do you want to see the " +
                            "leaderboard or start the game?";
                 imageToSend = encodeImage("hi");
                 objectToSend = createJSONObject(true, state, imageToSend, reply);
                 setState(getState() + 1);
+                firstTime = false;
                 break;
             case 3:
                 // Ask if client wants to see the leaderboard or start the game
                 if (getPayloadFromClient().equals("start")) {
-                    if (gameLogic == null) {
-                        System.out.println("Server: Creating game logic");
-                        gameLogic = new GameLogic();
-                    }
                     imageToSend = encodeImage("quote");
                     String response = "Who said the quote?";
                     objectToSend = createJSONObject(true, state, imageToSend, response);
@@ -165,9 +166,9 @@ public class Server {
                     break;
                 } else if (getPayloadFromClient().equals("leader")) {
                     imageToSend = encodeImage("question");
-                    String response = "Here's the leaderboard";
+                    String response = gameLogic.displayLeaderboard();
                     objectToSend = createJSONObject(true, state, imageToSend, response);
-                    setState(6);
+                    setState(2);
                     break;
                 } else {
                     String response = "Sorry I didn't understand that. Please enter start or leader";
@@ -216,6 +217,7 @@ public class Server {
                             }
                         } else if (gameLogic.getCorrectGuesses() == 3) {
                             response = "You won!!!!";
+                            gameLogic.updateLeaderboard(playerName);
                         } else {
                             response = "Sorry, you lose";
                         }
@@ -423,7 +425,7 @@ public class Server {
         this.prevImage = prevImage;
     }
 
-    public HashMap<String, Integer> getPlayerNames() {
-        return playerNames;
+    public HashMap<String, Integer> getLeaderboard() {
+        return leaderboard;
     }
 }
