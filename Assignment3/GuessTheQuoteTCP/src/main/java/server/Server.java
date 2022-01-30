@@ -20,19 +20,19 @@ public class Server {
     private int imgChoice;
     private int state;
     private int characterIndex;
-    private GameLogic gameLogic = null;
+    private GameLogic gameLogic;
     private String prevImage;
     private LocalTime timeLimit;
     private LocalTime timeReceived;
-    private HashMap<String, Integer> leaderboard;
     private String playerName;
-    private boolean firstTime = true;
+    private boolean firstTime;
 
     public Server() {
         this.setState(0);
         this.setPayloadFromClient("");
         this.status = "";
         this.gameLogic = new GameLogic();
+        this.firstTime = true;
     }
 
     public void run(String[] args) throws IOException {
@@ -89,6 +89,7 @@ public class Server {
                 } finally {
                     if (clientSocket != null) {
                         System.out.println("Closing client socket");
+                        setState(1);
                         clientSocket.close();
                     }
                 }
@@ -198,7 +199,8 @@ public class Server {
 
                     } else if (getPayloadFromClient().equals("next")) {
                         imageToSend = encodeImage("quote");
-                        String response = "Okay! Here's another one!";
+                        String response = "Okay! Here's another one! Also, you just lost 2 points";
+                        gameLogic.setScore(gameLogic.getScore() - 2);
                         objectToSend = createJSONObject(true, state, imageToSend, response);
 
                     } else {
@@ -207,6 +209,8 @@ public class Server {
 
                         //TODO can combine these ifs but thats maybe bad actually
                         String response;
+                        String responseTail = "\nYou finished with " + gameLogic.getScore() + " points." +
+                                "\nEnter your name to play again";
                         if (!gameLogic.isGameOver()) {
                             if (gameLogic.isGuessWasCorrect()) {
                                 //correct answer
@@ -217,9 +221,11 @@ public class Server {
                             }
                         } else if (gameLogic.getCorrectGuesses() == 3) {
                             response = "You won!!!!";
+                            response += responseTail;
                             gameLogic.updateLeaderboard(playerName);
                         } else {
                             response = "Sorry, you lose";
+                            response += responseTail;
                         }
 
                         // get a new quote if the guess was correct else use the previous quote
@@ -232,8 +238,10 @@ public class Server {
                             }
                         } else if (gameLogic.getCorrectGuesses() == 3) {
                             imageToSend = encodeImage("win");
+                            resetGame();
                         } else {
                             imageToSend = encodeImage("lose");
+                            resetGame();
                         }
 
                         objectToSend = createJSONObject(true, state, imageToSend, response);
@@ -243,9 +251,11 @@ public class Server {
                     imageToSend = encodeImage("lose");
                     String response = "Sorry, you ran out of time!";
                     objectToSend = createJSONObject(true, state, imageToSend, response);
+                    resetGame();
                 }
-
                 break;
+            case 5:
+
 
             default:
                 imageToSend = encodeImage("question");
@@ -255,6 +265,12 @@ public class Server {
                 break;
         }
         return objectToSend;
+    }
+
+    public void resetGame() {
+        firstTime = true;
+        setState(2);
+        gameLogic.resetGame();
     }
 
     public JSONObject createJSONObject(boolean ok, int state, String image, String text) {
@@ -423,9 +439,5 @@ public class Server {
 
     public void setPrevImage(String prevImage) {
         this.prevImage = prevImage;
-    }
-
-    public HashMap<String, Integer> getLeaderboard() {
-        return leaderboard;
     }
 }

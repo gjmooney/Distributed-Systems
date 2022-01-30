@@ -203,6 +203,7 @@ public class ClientGui implements client.OutputPanel.EventHandlers {
 
       state = (int) header.get("state");
       outputPanel.appendOutput((String) payload.get("text"));
+      outputStream.flush();
 
     } catch (Exception e) {
       e.printStackTrace();

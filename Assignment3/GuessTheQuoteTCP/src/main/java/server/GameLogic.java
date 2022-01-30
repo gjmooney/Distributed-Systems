@@ -3,9 +3,8 @@ package server;
 import org.json.JSONObject;
 
 import java.time.LocalTime;
-import java.util.HashMap;
-import java.util.Locale;
-import java.util.Stack;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public class GameLogic {
     private int score;
@@ -16,7 +15,7 @@ public class GameLogic {
     private boolean guessWasCorrect;
     private boolean gameOver;
     private HashMap<String, Integer> characterMap;
-    private HashMap<String, Integer> leaderboard;
+    private TreeMap<String, Integer> leaderboard;
 
     public GameLogic() {
         this.score = 0;
@@ -25,7 +24,7 @@ public class GameLogic {
         this.quoteCharacter = "";
         this.guessWasCorrect = false;
         this.correctGuesses = 0;
-        this.leaderboard = new HashMap<>();
+        this.leaderboard = new TreeMap<>();
         initMap();
     }
 
@@ -84,8 +83,9 @@ public class GameLogic {
 
     public String displayLeaderboard() {
         String message;
+
         if (!leaderboard.isEmpty()) {
-            message = "Here's the leaderboard\n" + leaderboard.toString();
+            message = "Here's the leaderboard\n" + leaderboard;
         } else {
             message = "There's nobody on the leaderboard yet! You're the first player!";
         }
@@ -93,6 +93,7 @@ public class GameLogic {
         message += "\nEnter anything to continue...";
         return message;
     }
+
 
     public void checkTimer(LocalTime timeLimit, LocalTime timeReceived) {
         if (timeReceived.isAfter(timeLimit)) {
@@ -124,6 +125,14 @@ public class GameLogic {
         setQuoteCharacter(character);
         setQuoteNumber(number);
         System.out.println("Game Logic: Saved char: " + getQuoteCharacter());
+    }
+
+    public void resetGame() {
+        setScore(0);
+        setNumberOfGuesses(0);
+        setGameOver(false);
+        setCorrectGuesses(0);
+        initMap();
     }
 
     public int getScore() {
@@ -182,7 +191,7 @@ public class GameLogic {
         this.correctGuesses = correctGuesses;
     }
 
-    public HashMap<String, Integer> getLeaderboard() {
+    public TreeMap<String, Integer> getLeaderboard() {
         return leaderboard;
     }
 
