@@ -1,10 +1,15 @@
 package server;
 
 import org.json.JSONObject;
+import org.json.JSONTokener;
 
+import java.io.*;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.LocalTime;
 import java.util.*;
-import java.util.stream.Collectors;
 
 public class GameLogic {
     private int score;
@@ -15,7 +20,7 @@ public class GameLogic {
     private boolean guessWasCorrect;
     private boolean gameOver;
     private HashMap<String, Integer> characterMap;
-    private TreeMap<String, Integer> leaderboard;
+    private Map<String, Integer> leaderboard;
 
     public GameLogic() {
         this.score = 0;
@@ -26,6 +31,44 @@ public class GameLogic {
         this.correctGuesses = 0;
         this.leaderboard = new TreeMap<>();
         initMap();
+        readLeaderboard();
+    }
+
+    public void readLeaderboard() {
+       /* try {
+            Reader reader = new FileReader("src/main/resources/leaderboard.txt");
+            JSONTokener jsonTokener = new JSONTokener(reader);
+            JSONObject namePrompt = new JSONObject(jsonTokener);
+            leaderboard = namePrompt.toMap();
+        } catch (FileNotFoundException e) {
+            System.out.println("No leaderboard yet");
+        }*/
+        BufferedReader leaderboardReader = null;
+
+        try {
+            File file = new File("src/main/resources/leaderboard.txt");
+            leaderboardReader = new BufferedReader(new FileReader(file));
+            String line = null;
+            while ((line = leaderboardReader.readLine()) != null) {
+                String[] parts = line.split(":");
+                String name = parts[0].trim();
+                Integer number = Integer.valueOf(parts[1].trim());
+                leaderboard.put(name, number);
+            }
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+        }
+        finally {
+            if (leaderboardReader != null) {
+                try {
+                    leaderboardReader.close();
+                }
+                catch (Exception e) {
+                    e.printStackTrace();
+                };
+            }
+        }
     }
 
     public void initMap() {
@@ -76,8 +119,30 @@ public class GameLogic {
             leaderboard.put(name, getScore());
         } else {
             //player already on board
-            int oldScore = leaderboard.get(name);
+            int oldScore = (int) leaderboard.get(name);
             leaderboard.put(name, oldScore + getScore());
+        }
+        saveLeaderboard();
+    }
+
+    public void saveLeaderboard() {
+        File file = new File("src/main/resources/leaderboard.txt");
+        BufferedWriter leaderboardWriter = null;
+        try {
+            leaderboardWriter = new BufferedWriter(new FileWriter(file));
+            for (Map.Entry<String, Integer> entry : leaderboard.entrySet()) {
+                leaderboardWriter.write(entry.getKey() + ":" + entry.getValue());
+                leaderboardWriter.newLine();
+            }
+            leaderboardWriter.flush();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                leaderboardWriter.close();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
     }
 
@@ -191,7 +256,7 @@ public class GameLogic {
         this.correctGuesses = correctGuesses;
     }
 
-    public TreeMap<String, Integer> getLeaderboard() {
+    public Map<String, Integer> getLeaderboard() {
         return leaderboard;
     }
 

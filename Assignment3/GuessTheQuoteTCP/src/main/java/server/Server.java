@@ -27,7 +27,7 @@ public class Server {
     private String playerName;
     private boolean firstTime;
 
-    public Server() {
+    public Server() throws FileNotFoundException {
         this.setState(0);
         this.setPayloadFromClient("");
         this.status = "";
@@ -147,7 +147,7 @@ public class Server {
                 //add player name to list for leaderboard if they're not already added
                 if (firstTime) {
                     playerName = textFromClient;
-
+                    System.out.println("CRYRYRYRYRYR");
                 }
                 String reply = "Hello " + playerName + ". Do you want to see the " +
                            "leaderboard or start the game?";
@@ -330,6 +330,7 @@ public class Server {
         String encodedImage;
         File file;
         if (imageType.equals("hi")) {
+            //String path = Server.class.getResource("/img/hi.png").getFile();
             file = new File("src/main/resources/img/hi.png");
 
         } else if(imageType.equals("question")) {
