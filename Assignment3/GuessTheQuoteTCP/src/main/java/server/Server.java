@@ -26,6 +26,7 @@ public class Server {
     private LocalTime timeReceived;
     private String playerName;
     private boolean firstTime;
+    private boolean clientPlaying;
 
     public Server() throws FileNotFoundException {
         this.setState(0);
@@ -66,6 +67,7 @@ public class Server {
                     JSONObject sendToClient = null;
                     System.out.println("Waiting for client to connect");
                     clientSocket = serverSock.accept();
+                    clientPlaying = true;
                     System.out.println("Server accepted socket");
                     inputStream = new ObjectInputStream(clientSocket.getInputStream());
                     outputStream = new ObjectOutputStream(clientSocket.getOutputStream());
@@ -74,7 +76,7 @@ public class Server {
                     sendToClient = createResponse(getState(), "Hey! What's your name!?");
                     outputStream.writeObject(sendToClient.toString());
 
-                    while (true) {
+                    while (clientPlaying) {
                         Object fromClient = inputStream.readObject();
                         receiveFromClient((String) fromClient);
                         sendToClient = createResponse(getState(), getPayloadFromClient());
@@ -90,6 +92,8 @@ public class Server {
                     if (clientSocket != null) {
                         System.out.println("Closing client socket");
                         setState(1);
+                        inputStream.close();
+                        outputStream.close();
                         clientSocket.close();
                     }
                 }
@@ -133,6 +137,7 @@ public class Server {
         JSONObject objHeader = new JSONObject();
         JSONObject objPayload = new JSONObject();
         String imageToSend;
+        textFromClient = textFromClient.toLowerCase(Locale.ROOT);
         switch (state) {
             case 1:
                 // Ask clients name
@@ -145,27 +150,33 @@ public class Server {
             case 2:
                 // Greet client by name
                 //add player name to list for leaderboard if they're not already added
-                if (firstTime) {
-                    playerName = textFromClient;
-                    System.out.println("CRYRYRYRYRYR");
+                if (textFromClient.equals("quit")) {
+                    String response = "OKAY BYE BYE!";
+                    imageToSend = encodeImage("hi");
+                    objectToSend = createJSONObject(true, 5, imageToSend, response);
+                    clientPlaying = false;
+                } else {
+                    if (firstTime) {
+                        playerName = textFromClient;
+                    }
+                    String reply = "Hello " + playerName + ". If you want to see the leaderboard " +
+                            "enter leader or enter start to start the game!";
+                    imageToSend = encodeImage("hi");
+                    objectToSend = createJSONObject(true, state, imageToSend, reply);
+                    setState(getState() + 1);
+                    firstTime = false;
                 }
-                String reply = "Hello " + playerName + ". Do you want to see the " +
-                           "leaderboard or start the game?";
-                imageToSend = encodeImage("hi");
-                objectToSend = createJSONObject(true, state, imageToSend, reply);
-                setState(getState() + 1);
-                firstTime = false;
                 break;
             case 3:
                 // Ask if client wants to see the leaderboard or start the game
-                if (getPayloadFromClient().equals("start")) {
+                if (textFromClient.equals("start")) {
                     imageToSend = encodeImage("quote");
                     String response = "Who said the quote?";
                     objectToSend = createJSONObject(true, state, imageToSend, response);
                     timeLimit = LocalTime.now().plusMinutes(1);
                     setState(getState() + 1);
                     break;
-                } else if (getPayloadFromClient().equals("leader")) {
+                } else if (textFromClient.equals("leader")) {
                     imageToSend = encodeImage("question");
                     String response = gameLogic.displayLeaderboard();
                     objectToSend = createJSONObject(true, state, imageToSend, response);
@@ -180,8 +191,10 @@ public class Server {
             case 4:
                 //actual gameplay -- server expects a name, more, or next
                 gameLogic.checkTimer(timeLimit, timeReceived);
+                String responseTail = "\nYou finished with " + gameLogic.getScore() + " points." +
+                        "\nEnter your name to play again, or quit to stop playing.";
                 if (!gameLogic.isGameOver()) {
-                    if (getPayloadFromClient().equals("more")) {
+                    if (textFromClient.equals("more")) {
                         //get another quote form the same character
                         String response;
                         int quoteNum = gameLogic.getQuoteNumber();
@@ -197,7 +210,7 @@ public class Server {
                         objPayload.put("image", imageToSend);
                         objectToSend = createJSONObject(true, state, imageToSend, response);
 
-                    } else if (getPayloadFromClient().equals("next")) {
+                    } else if (textFromClient.equals("next")) {
                         imageToSend = encodeImage("quote");
                         String response = "Okay! Here's another one! Also, you just lost 2 points";
                         gameLogic.setScore(gameLogic.getScore() - 2);
@@ -209,8 +222,7 @@ public class Server {
 
                         //TODO can combine these ifs but thats maybe bad actually
                         String response;
-                        String responseTail = "\nYou finished with " + gameLogic.getScore() + " points." +
-                                "\nEnter your name to play again";
+
                         if (!gameLogic.isGameOver()) {
                             if (gameLogic.isGuessWasCorrect()) {
                                 //correct answer
@@ -250,6 +262,7 @@ public class Server {
                     //ran out of time
                     imageToSend = encodeImage("lose");
                     String response = "Sorry, you ran out of time!";
+                    response += responseTail;
                     objectToSend = createJSONObject(true, state, imageToSend, response);
                     resetGame();
                 }

@@ -197,6 +197,13 @@ public class ClientGui implements client.OutputPanel.EventHandlers {
       Map header = headerJSON.toMap();
       Map payload = payloadJSON.toMap();
 
+      if (header.get("state").equals(5)) {
+        serverSock.close();
+        inputStream.close();
+        outputStream.close();
+        System.exit(0);
+      }
+
       outputPanel.setPoints((Integer) payload.get("score"));
       ImageIcon image = decodeImage((String) payload.get("image"));
       insertImage(image, 0 ,0);
@@ -272,6 +279,7 @@ public class ClientGui implements client.OutputPanel.EventHandlers {
     } catch (Exception e) {
       e.printStackTrace();
       System.out.println("Error receiving from server in main");
+      System.exit(5);
     }
     // show the GUI dialog as modal
     //main.show(true); // you should not have your logic after this. You main logic should happen whenever "submit" is clicked
