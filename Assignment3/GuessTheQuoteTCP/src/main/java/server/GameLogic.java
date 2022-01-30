@@ -41,7 +41,6 @@ public class GameLogic {
             JSONObject namePrompt = new JSONObject(jsonTokener);
             leaderboard = namePrompt.toMap();
         } catch (FileNotFoundException e) {
-            System.out.println("No leaderboard yet");
         }*/
         BufferedReader leaderboardReader = null;
 
@@ -57,7 +56,8 @@ public class GameLogic {
             }
         }
         catch (Exception e) {
-            e.printStackTrace();
+            System.out.println("No leaderboard yet");
+
         }
         finally {
             if (leaderboardReader != null) {

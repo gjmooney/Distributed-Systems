@@ -191,8 +191,7 @@ public class Server {
             case 4:
                 //actual gameplay -- server expects a name, more, or next
                 gameLogic.checkTimer(timeLimit, timeReceived);
-                String responseTail = "\nYou finished with " + gameLogic.getScore() + " points." +
-                        "\nEnter your name to play again, or quit to stop playing.";
+
                 if (!gameLogic.isGameOver()) {
                     if (textFromClient.equals("more")) {
                         //get another quote form the same character
@@ -222,6 +221,8 @@ public class Server {
 
                         //TODO can combine these ifs but thats maybe bad actually
                         String response;
+                        String responseTail = "\nYou finished with " + gameLogic.getScore() + " points." +
+                                "\nEnter your name to play again, or quit to stop playing.";
 
                         if (!gameLogic.isGameOver()) {
                             if (gameLogic.isGuessWasCorrect()) {
@@ -261,8 +262,9 @@ public class Server {
                 } else {
                     //ran out of time
                     imageToSend = encodeImage("lose");
-                    String response = "Sorry, you ran out of time!";
-                    response += responseTail;
+                    String response = "Sorry, you ran out of time!\nYou finished with "
+                            + gameLogic.getScore() + " points." +
+                            "\nEnter your name to play again, or quit to stop playing.";;
                     objectToSend = createJSONObject(true, state, imageToSend, response);
                     resetGame();
                 }
