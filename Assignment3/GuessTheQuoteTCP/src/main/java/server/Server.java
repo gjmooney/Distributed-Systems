@@ -9,15 +9,11 @@ import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.time.LocalTime;
-import java.time.temporal.ChronoUnit;
 import java.util.*;
 
 
 public class Server {
     private String payloadFromClient;
-    private String status;
-    private String charChoice;
-    private int imgChoice;
     private int state;
     private int characterIndex;
     private GameLogic gameLogic;
@@ -28,22 +24,19 @@ public class Server {
     private boolean firstTime;
     private boolean clientPlaying;
 
-    public Server() throws FileNotFoundException {
+    public Server() {
         this.setState(0);
         this.setPayloadFromClient("");
-        this.status = "";
         this.gameLogic = new GameLogic();
         this.firstTime = true;
     }
 
     public void run(String[] args) throws IOException {
-        int count = 0;
         ServerSocket serverSock = null;
         ObjectInputStream inputStream = null;
         ObjectOutputStream outputStream = null;
-        Socket clientSocket = null;
+        Socket clientSocket;
         int port = 8080;
-        int sleepDelay = 10000;
 
         if (args.length > 1) {
             System.out.println("Expected one argument: <port(int)>");
@@ -64,7 +57,7 @@ public class Server {
             while (true) {
                 clientSocket = null;
                 try {
-                    JSONObject sendToClient = null;
+                    JSONObject sendToClient;
                     System.out.println("Waiting for client to connect");
                     clientSocket = serverSock.accept();
                     clientPlaying = true;
@@ -82,12 +75,9 @@ public class Server {
                         sendToClient = createResponse(getState(), getPayloadFromClient());
                         outputStream.writeObject(sendToClient.toString());
                         outputStream.flush();
-
-                        System.out.println("SERVER: END OF WHILE");
                     }
                 } catch (Exception e) {
                     e.printStackTrace();
-                    System.out.println("Client disconnected");
                 } finally {
                     if (clientSocket != null) {
                         System.out.println("Closing client socket");
@@ -116,14 +106,11 @@ public class Server {
             JSONObject namePrompt = new JSONObject(jsonTokener);
             JSONObject headerJSON = (JSONObject) namePrompt.get("header");
             JSONObject payloadJSON = (JSONObject) namePrompt.get("payload");
-            Map header = headerJSON.toMap();
-            Map payload = payloadJSON.toMap();
-            //setState((int) header.get("state"));
-            //String reply = ((String) payload.get("text"));
+            Map<String, Object> header = headerJSON.toMap();
+            Map<String, Object> payload = payloadJSON.toMap();
             setPayloadFromClient(((String) payload.get("text")));
             timeReceived = LocalTime.now();
             System.out.println("[RECEIVE FROM CLIENT] " + getPayloadFromClient());
-
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -133,23 +120,23 @@ public class Server {
 
     //create a response to send to the client
     public JSONObject createResponse(int state, String textFromClient) throws IOException {
-        JSONObject objectToSend = new JSONObject();
+        JSONObject objectToSend;
         JSONObject objHeader = new JSONObject();
         JSONObject objPayload = new JSONObject();
         String imageToSend;
-        String userEntry = textFromClient.toLowerCase(Locale.ROOT);
+        String userEntry = textFromClient.toLowerCase(Locale.ROOT).trim();
         switch (state) {
             case 1:
                 // Ask clients name
                 imageToSend = encodeImage("hi");
 
                 // NOTE: Not text from client here but whatever
-                objectToSend = createJSONObject(true, state, imageToSend, userEntry);
+                objectToSend = createJSONObject(true, state, imageToSend, textFromClient);
                 setState(getState() + 1);
                 break;
             case 2:
                 // Greet client by name
-                //add player name to list for leaderboard if they're not already added
+                // add player name to list for leaderboard if they're not already added
                 if (userEntry.equals("quit")) {
                     String response = "OKAY BYE BYE!";
                     imageToSend = encodeImage("hi");
@@ -168,10 +155,11 @@ public class Server {
                 }
                 break;
             case 3:
-                // Ask if client wants to see the leaderboard or start the game
                 if (userEntry.equals("start")) {
                     imageToSend = encodeImage("quote");
-                    String response = "Who said the quote?";
+                    String response = "Who said the quote? " +
+                            "\n[Enter more for another quote from this character]" +
+                            "\n[Enter next to see quotes from a different character]";
                     objectToSend = createJSONObject(true, state, imageToSend, response);
                     timeLimit = LocalTime.now().plusMinutes(1);
                     setState(getState() + 1);
@@ -219,7 +207,6 @@ public class Server {
                         // check if the answer is right and set the boolean in gameLogic
                         gameLogic.checkAnswer(userEntry);
 
-                        //TODO can combine these ifs but thats maybe bad actually
                         String response;
                         String responseTail = "\nYou finished with " + gameLogic.getScore() + " points." +
                                 "\nEnter your name to play again, or quit to stop playing.";
@@ -269,12 +256,9 @@ public class Server {
                     resetGame();
                 }
                 break;
-            case 5:
-
-
             default:
                 imageToSend = encodeImage("question");
-                String response = "ERROR ERROR EROOR";
+                String response = "ERROR ERROR ERROR";
                 objectToSend = createJSONObject(false, state, imageToSend, response);
                 setState(7);
                 break;
@@ -314,7 +298,6 @@ public class Server {
     public String chooseCharacterAndQuote(boolean first) {
         String[] characters = {"Captain_America", "Darth_Vader", "Homer_Simpson", "Jack_Sparrow",
                                 "Joker", "Tony_Stark", "Wolverine"};
-
         if (first) {
             Random rand = new Random();
             characterIndex = rand.nextInt(7);
@@ -341,11 +324,11 @@ public class Server {
         return filename;
     }
 
+    // Adapted from AdvancedCustomProtocol example
     public String encodeImage(String imageType) throws IOException {
         String encodedImage;
         File file;
         if (imageType.equals("hi")) {
-            //String path = Server.class.getResource("/img/hi.png").getFile();
             file = new File("src/main/resources/img/hi.png");
 
         } else if(imageType.equals("question")) {
@@ -375,10 +358,10 @@ public class Server {
         }
         if (!file.exists()) {
             System.out.println("File not found: " + file.getAbsolutePath());
-            return "File not found";
+            return "unableToEncode";
         }
         BufferedImage image = ImageIO.read(file);
-        byte[] bytes = null;
+        byte[] bytes;
         try (ByteArrayOutputStream output = new ByteArrayOutputStream()) {
             ImageIO.write(image, "png", output);
             bytes = output.toByteArray();
@@ -389,21 +372,17 @@ public class Server {
             setPrevImage(encodedImage); // save image we just encoded
             return encodedImage;
         }
-        return "Unable to encode image";
+        return "unableToEncode";
     }
 
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) {
         Server mainServer = new Server();
-        LocalTime now = LocalTime.now();
-        System.out.println(now);
-        now.plusMinutes(1);
-        System.out.println(now.minus(60, ChronoUnit.SECONDS));
         try {
             mainServer.run(args);
 
         } catch (Exception e) {
             e.printStackTrace();
-            System.out.println("Yo your server broke bruh");
+            System.out.println("The server broke");
             System.exit(1);
         }
     }
@@ -416,37 +395,12 @@ public class Server {
         this.payloadFromClient = payloadFromClient;
     }
 
-    public String getStatus() {
-        return status;
-    }
-
-    public void setStatus(String status) {
-        this.status = status;
-    }
-
     public int getState() {
-        System.out.println("STATE: " + state);
         return state;
     }
 
     public void setState(int state) {
         this.state = state;
-    }
-
-    public String getCharChoice() {
-        return charChoice;
-    }
-
-    public void setCharChoice(String charChoice) {
-        this.charChoice = charChoice;
-    }
-
-    public int getImgChoice() {
-        return imgChoice;
-    }
-
-    public void setImgChoice(int imgChoice) {
-        this.imgChoice = imgChoice;
     }
 
     public String getPrevImage() {
