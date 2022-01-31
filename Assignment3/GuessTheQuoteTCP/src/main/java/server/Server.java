@@ -369,7 +369,7 @@ public class Server {
         if (bytes != null) {
             Base64.Encoder encoder = Base64.getEncoder();
             encodedImage = encoder.encodeToString(bytes);
-            setPrevImage(encodedImage); // save image we just encoded
+            setPrevImage(encodedImage); // save the image we just encoded
             return encodedImage;
         }
         return "unableToEncode";

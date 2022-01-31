@@ -168,7 +168,7 @@ public class OutputPanel extends JPanel {
    * Append a message to the output panel
    * @param message - the message to print
    */
-  public void appendOutput(String message) {
-    area.append(message + "\n");
+  public void setOutput(String message) {
+    area.setText(message + "\n");
   }
 }

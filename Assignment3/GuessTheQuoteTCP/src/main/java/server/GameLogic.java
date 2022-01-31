@@ -28,19 +28,12 @@ public class GameLogic {
     }
 
     public void readLeaderboard() {
-       /* try {
-            Reader reader = new FileReader("src/main/resources/leaderboard.txt");
-            JSONTokener jsonTokener = new JSONTokener(reader);
-            JSONObject namePrompt = new JSONObject(jsonTokener);
-            leaderboard = namePrompt.toMap();
-        } catch (FileNotFoundException e) {
-        }*/
         BufferedReader leaderboardReader = null;
 
         try {
             File file = new File("src/main/resources/leaderboard.txt");
             leaderboardReader = new BufferedReader(new FileReader(file));
-            String line = null;
+            String line;
             while ((line = leaderboardReader.readLine()) != null) {
                 String[] parts = line.split(":");
                 String name = parts[0].trim();
@@ -87,11 +80,10 @@ public class GameLogic {
         String formatClientAnswer = answerFromClient.toLowerCase(Locale.ROOT);
         String formatCorrectAnswer = getQuoteCharacter().replaceAll("_", " ")
                 .toLowerCase(Locale.ROOT);
-        System.out.println("client: " + formatClientAnswer + " correct: " + formatCorrectAnswer);
+        System.out.println("client answer: " + formatClientAnswer + " correct answer: " + formatCorrectAnswer);
         if (formatClientAnswer.equals(formatCorrectAnswer)) {
             setGuessWasCorrect(true);
             changeScore();
-            System.out.println("checkAnswer: correct");
             setNumberOfGuesses(0);
             setCorrectGuesses(getCorrectGuesses() + 1);
             if (getCorrectGuesses() == 3) {
@@ -100,7 +92,6 @@ public class GameLogic {
         } else {
             setGuessWasCorrect(false);
             setNumberOfGuesses(getNumberOfGuesses() + 1);
-            System.out.println("checkAnswer: wrong");
         }
     }
 
@@ -110,7 +101,7 @@ public class GameLogic {
             leaderboard.put(name, getScore());
         } else {
             //player already on board
-            int oldScore = (int) leaderboard.get(name);
+            int oldScore = leaderboard.get(name);
             leaderboard.put(name, oldScore + getScore());
         }
         saveLeaderboard();

@@ -92,7 +92,7 @@ public class ClientGui implements client.OutputPanel.EventHandlers {
    */
   public void newGame(int dimension) {
     picturePanel.newGame(dimension);
-    outputPanel.appendOutput("Started new game with a " + dimension + "x" + dimension + " board.");
+    outputPanel.setOutput("Started new game with a " + dimension + "x" + dimension + " board.");
   }
 
   /**
@@ -115,7 +115,7 @@ public class ClientGui implements client.OutputPanel.EventHandlers {
       error = "Error receiving image from server.\n";
       error += e.toString();
     }
-    outputPanel.appendOutput(error);
+    outputPanel.setOutput(error);
     return false;
   }
 
@@ -126,20 +126,17 @@ public class ClientGui implements client.OutputPanel.EventHandlers {
    */
   @Override
   public void submitClicked() {
-    // An example how to update the points in the UI
-    //outputPanel.setPoints(10);
-
     // Pulls the input box text
     String input = outputPanel.getInputText();
     // if has input
     if (input.length() > 0) {
       // append input to the output panel
-      outputPanel.appendOutput(input);
+      outputPanel.setOutput(input);
       sendToServer(state, input);
       // clear input text box
       outputPanel.setInputText("");
     }
-    System.out.println("CCNC");
+
     try {
       receiveFromServer();
     } catch (Exception e) {
@@ -155,7 +152,7 @@ public class ClientGui implements client.OutputPanel.EventHandlers {
   @Override
   public void inputUpdated(String input) {
     if (input.equals("surprise")) {
-      outputPanel.appendOutput("You found me!");
+      outputPanel.setOutput("You found me!");
     }
   }
 
@@ -186,7 +183,7 @@ public class ClientGui implements client.OutputPanel.EventHandlers {
     }
   }
 
-  public void receiveFromServer() throws IOException, ClassNotFoundException {
+  public void receiveFromServer() {
     System.out.println("Receiving from server");
     try {
       String jsonData = (String) inputStream.readObject();
@@ -194,8 +191,8 @@ public class ClientGui implements client.OutputPanel.EventHandlers {
       JSONObject jsonObj = new JSONObject(jsonTokener);
       JSONObject headerJSON = (JSONObject) jsonObj.get("header");
       JSONObject payloadJSON = (JSONObject) jsonObj.get("payload");
-      Map header = headerJSON.toMap();
-      Map payload = payloadJSON.toMap();
+      Map<String, Object> header = headerJSON.toMap();
+      Map<String, Object> payload = payloadJSON.toMap();
       if (header.get("state").equals(5)) {
         serverSock.close();
         inputStream.close();
@@ -204,11 +201,13 @@ public class ClientGui implements client.OutputPanel.EventHandlers {
       }
 
       outputPanel.setPoints((Integer) payload.get("score"));
-      ImageIcon image = decodeImage((String) payload.get("image"));
-      insertImage(image, 0 ,0);
 
-      state = (int) header.get("state");
-      outputPanel.appendOutput((String) payload.get("text"));
+      if (!(payload.get("image").equals("unableToEncode"))) {
+        ImageIcon image = decodeImage((String) payload.get("image"));
+        insertImage(image, 0 ,0);
+      }
+
+      outputPanel.setOutput((String) payload.get("text"));
       outputStream.flush();
 
     } catch (Exception e) {
@@ -220,14 +219,11 @@ public class ClientGui implements client.OutputPanel.EventHandlers {
 
   public static void sendToServer(int state, String message) {
     try {
-      System.out.println("[METHOD] SEND TO SERVER");
-
       JSONObject objectToSend = new JSONObject();
       JSONObject objHeader = new JSONObject();
       JSONObject objPayload = new JSONObject();
       objHeader.put("state", state);
       objHeader.put("type", "text");
-      //objHeader.put("status", "nameReply");
       objHeader.put("ok", true);
       objPayload.put("text", message);
 
@@ -242,20 +238,19 @@ public class ClientGui implements client.OutputPanel.EventHandlers {
     }
   }
 
+  //Adapted from AdvanceCustomProtocol example
   public ImageIcon decodeImage(String imageString) throws IOException {
     Base64.Decoder decoder = Base64.getDecoder();
     byte[] bytes = decoder.decode(imageString);
-    ImageIcon icon = null;
+    ImageIcon icon;
     try (ByteArrayInputStream bais = new ByteArrayInputStream(bytes)) {
       BufferedImage image = ImageIO.read(bais);
       icon = new ImageIcon(image);
     }
-
     return icon;
-
   }
 
-  public static void main(String[] args) throws IOException {
+  public static void main(String[] args) {
     // create the frame
     ClientGui main = new ClientGui();
     main.establishConnection(args);
