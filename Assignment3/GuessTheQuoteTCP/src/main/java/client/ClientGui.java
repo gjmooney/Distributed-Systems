@@ -139,6 +139,12 @@ public class ClientGui implements client.OutputPanel.EventHandlers {
       // clear input text box
       outputPanel.setInputText("");
     }
+    System.out.println("CCNC");
+    try {
+      receiveFromServer();
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
   }
   
   /**
@@ -155,11 +161,7 @@ public class ClientGui implements client.OutputPanel.EventHandlers {
 
   public void establishConnection(String[] args) {
     serverSock = null;
-    //ObjectOutputStream outputStream = null;
-    //ObjectInputStream inputStream = null;
     int port = 8080;
-    //String host = "localhost";
-    String testString = "TEST STRING";
 
     if (args.length != 2) {
       System.out.println("Expected two arguments: <host(String)> <port(int)>");
@@ -177,7 +179,6 @@ public class ClientGui implements client.OutputPanel.EventHandlers {
       serverSock = new Socket(host, port);
       outputStream = new ObjectOutputStream(serverSock.getOutputStream());
       inputStream = new ObjectInputStream(serverSock.getInputStream());
-      //sendToServer(testString);
     } catch (Exception e) {
       e.printStackTrace();
       System.out.println("Could not establish connection over port: " + port);
@@ -195,7 +196,6 @@ public class ClientGui implements client.OutputPanel.EventHandlers {
       JSONObject payloadJSON = (JSONObject) jsonObj.get("payload");
       Map header = headerJSON.toMap();
       Map payload = payloadJSON.toMap();
-
       if (header.get("state").equals(5)) {
         serverSock.close();
         inputStream.close();
@@ -256,25 +256,16 @@ public class ClientGui implements client.OutputPanel.EventHandlers {
   }
 
   public static void main(String[] args) throws IOException {
-    //establishConnection(args);
     // create the frame
     ClientGui main = new ClientGui();
     main.establishConnection(args);
 
-
     // setup the UI to display on image
     main.newGame(1);
 
-    // add images to the grid
-    //main.insertImage("img/Jack_Sparrow/quote4.png", 0, 0);
-
     try {
-     // main.show(true);
-      while (true) {
-        main.receiveFromServer();
-        main.show(false);
-
-      }
+      main.receiveFromServer();
+      main.show(false);
     } catch (Exception e) {
       e.printStackTrace();
       System.out.println("Error receiving from server in main");
