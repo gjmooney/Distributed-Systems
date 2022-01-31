@@ -21,13 +21,12 @@ public class Server {
     private int characterIndex;
     private GameLogic gameLogic;
     private String prevImage;
-    private LocalTime timeLimit;
     private LocalTime timeReceived;
     private String playerName;
     private boolean firstTime;
     private boolean clientPlaying;
 
-    public Server() throws FileNotFoundException {
+    public Server() {
         this.setState(0);
         this.setPayloadFromClient("");
         this.status = "";
@@ -35,8 +34,7 @@ public class Server {
         this.firstTime = true;
     }
 
-    public void run(String[] args) throws IOException {
-        int count = 0;
+    public void run(String[] args) {
         DatagramSocket serverSock = null;
         int port = 9000;
 
@@ -71,8 +69,6 @@ public class Server {
                         sendToClient = createResponse(getState(), getPayloadFromClient());
                         byte[] output = JsonUtils.toByteArray(sendToClient);
                         NetworkUtils.Send(serverSock, messageTuple.Address, messageTuple.Port, output);
-
-                        System.out.println("SERVER: END OF WHILE");
                     }
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -98,12 +94,9 @@ public class Server {
             JSONObject payloadJSON = (JSONObject) jsonData.get("payload");
             Map header = headerJSON.toMap();
             Map payload = payloadJSON.toMap();
-            //setState((int) header.get("state"));
-            //String reply = ((String) payload.get("text"));
             setPayloadFromClient(((String) payload.get("text")));
             timeReceived = LocalTime.now();
             System.out.println("[RECEIVE FROM CLIENT] " + getPayloadFromClient());
-
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -113,9 +106,7 @@ public class Server {
 
     //create a response to send to the client
     public JSONObject createResponse(int state, String textFromClient) throws IOException {
-        JSONObject objectToSend = new JSONObject();
-        JSONObject objHeader = new JSONObject();
-        JSONObject objPayload = new JSONObject();
+        JSONObject objectToSend;
         String imageToSend;
         String userEntry = textFromClient.toLowerCase(Locale.ROOT);
         switch (state) {
@@ -124,28 +115,22 @@ public class Server {
                 imageToSend = encodeImage("hi");
 
                 // NOTE: Not text from client here but whatever
-                objectToSend = createJSONObject(true, state, imageToSend, "What your name");
+                objectToSend = createJSONObject(true, state, imageToSend, "HEY!! What's your name!?");
                 setState(getState() + 1);
                 break;
             case 2:
                 // Greet client by name
                 //add player name to list for leaderboard if they're not already added
-                if (userEntry.equals("quit")) {
-                    String response = "OKAY BYE BYE!";
-                    imageToSend = encodeImage("hi");
-                    objectToSend = createJSONObject(true, 5, imageToSend, response);
-                    clientPlaying = false;
-                } else {
-                    if (firstTime) {
-                        playerName = userEntry;
-                    }
-                    String reply = "Hello " + playerName + ". Check out this cute lil' piggie!" +
-                            "\nThat's it, enter quit to exit.";
-                    imageToSend = encodeImage("cute");
-                    objectToSend = createJSONObject(true, state, imageToSend, reply);
-                    setState(getState() + 1);
-                    firstTime = false;
+                if (firstTime) {
+                    playerName = userEntry;
                 }
+                String reply = "Hello " + playerName + ". Check out this cute lil' piggie!" +
+                        "\nThat's it, enter quit to exit.";
+                imageToSend = encodeImage("cute");
+                objectToSend = createJSONObject(true, state, imageToSend, reply);
+                setState(getState() + 1);
+                firstTime = false;
+
                 break;
             case 3:
                 if (userEntry.equals("quit")) {
@@ -153,8 +138,10 @@ public class Server {
                     imageToSend = encodeImage("hi");
                     objectToSend = createJSONObject(true, 5, imageToSend, response);
                     clientPlaying = false;
+                    resetGame();
                 } else {
-                    String response = "Sorry I didn't understand that. Please quit to qui";
+                    System.out.println("BUTTS");
+                    String response = "Sorry I didn't understand that. Please enter quit to quit";
                     imageToSend = encodeImage("question");
                     objectToSend = createJSONObject(true, state, imageToSend, response);
 
@@ -172,7 +159,7 @@ public class Server {
 
     public void resetGame() {
         firstTime = true;
-        setState(2);
+        setState(1);
         gameLogic.resetGame();
     }
 
@@ -231,19 +218,20 @@ public class Server {
 
     public String encodeImage(String imageType) throws IOException {
         String encodedImage;
-        File file;
+        File file = null;
         if (imageType.equals("hi")) {
-            //String path = Server.class.getResource("/img/hi.png").getFile();
             file = new File("src/main/hi.png");
 
         } else if (imageType.equals("cute")) {
             file = new File("src/main/cutePiggie.jpg");
-        } else {
-            file = new File("/nope");
+
+        }
+        else if (imageType.equals("question")) {
+            file = new File("src/main/questions.jpg");
         }
         if (!file.exists()) {
             System.out.println("File not found: " + file.getAbsolutePath());
-            return "File not found";
+            return "noPic";
         }
         BufferedImage image = ImageIO.read(file);
         byte[] bytes = null;
@@ -257,21 +245,17 @@ public class Server {
             setPrevImage(encodedImage); // save image we just encoded
             return encodedImage;
         }
-        return "Unable to encode image";
+        return "noPic";
     }
 
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) {
         Server mainServer = new Server();
-        LocalTime now = LocalTime.now();
-        System.out.println(now);
-        now.plusMinutes(1);
-        System.out.println(now.minus(60, ChronoUnit.SECONDS));
         try {
             mainServer.run(args);
 
         } catch (Exception e) {
             e.printStackTrace();
-            System.out.println("Yo your server broke bruh");
+            System.out.println("The server broke");
             System.exit(1);
         }
     }
@@ -293,7 +277,6 @@ public class Server {
     }
 
     public int getState() {
-        System.out.println("STATE: " + state);
         return state;
     }
 

@@ -207,8 +207,10 @@ public class ClientGui implements OutputPanel.EventHandlers {
       }
 
       outputPanel.setPoints((Integer) payload.get("score"));
-      ImageIcon image = decodeImage((String) payload.get("image"));
-      insertImage(image, 0 ,0);
+      if (!(payload.get("image").equals("noPic"))) {
+        ImageIcon image = decodeImage((String) payload.get("image"));
+        insertImage(image, 0 ,0);
+      }
 
       state = (int) header.get("state");
       outputPanel.appendOutput((String) payload.get("text"));
