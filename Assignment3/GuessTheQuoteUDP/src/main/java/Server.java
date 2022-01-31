@@ -1,5 +1,9 @@
 import org.json.JSONObject;
 
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
@@ -7,13 +11,14 @@ import java.net.InetAddress;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.Base64;
 
 public class Server {
 
     public static void main(String[] args) {
         DatagramSocket serverSocket = null;
 
-        int port = 8080;
+        int port = 9000;
         int state = 1;
 
         if (args.length > 1) {
@@ -29,75 +34,99 @@ public class Server {
             System.exit(2);
         }
 
-
         try {
-            serverSocket = new DatagramSocket(port);
-            JSONObject messageToClient = null;
+            serverSocket = new DatagramSocket(9000);
+            // NOTE: SINGLE-THREADED, only one connection at a time
+            while (true) {
+                try {
+                    while (true) {
+                        NetworkUtils.Tuple messageTuple = NetworkUtils.Receive(serverSocket);
+                        JSONObject message = JsonUtils.fromByteArray(messageTuple.Payload);
+                        JSONObject returnMessage;
+                        if (message.get("type").equals("acknowledge")) {
+                            returnMessage = namePrompt();
+                        } else if (message.get("type").equals("nameResponse")) {
+                            returnMessage = sendImage();
+                        } else {
+                            returnMessage = error("Invalid message received");
+                        }
+                       /* if (message.has("selected")) {
+                            if (message.get("selected") instanceof Long || message.get("selected") instanceof Integer) {
+                                int choice = message.getInt("selected");
+                                switch (choice) {
+                                    case (1):
+                                        returnMessage = namePrompt();
+                                        break;
+                                    case (2):
+                                        returnMessage = image();
+                                        break;
+                                    default:
+                                        returnMessage = error("Invalid selection: " + choice + " is not an option");
+                                }
+                            } else {
+                                returnMessage = error("Selection must be an integer");
+                            }
+                        } else {
+                            returnMessage = error("Invalid message received");
+                        }*/
 
-           // while (true) {
-                switch (state) {
-                    case 1:
-                        messageToClient = createMessage("name");
-                        break;
-                    default:
-                        messageToClient = createMessage("broke");
-                        break;
+                        byte[] output = JsonUtils.toByteArray(returnMessage);
+                        NetworkUtils.Send(serverSocket, messageTuple.Address, messageTuple.Port, output);
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
                 }
-                byte[] output = messageToClient.toString().getBytes(StandardCharsets.UTF_8);
-                send(serverSocket,output);
-
-            //}
-
-        } catch (Exception e) {
+            }
+        } catch (IOException e) {
             e.printStackTrace();
-            System.out.println("Could not establish connection over port: " + port);
-            System.exit(2);
         } finally {
             if (serverSocket != null) {
-                System.out.println("Closing serverSocket");
+                System.out.println("Closing socket");
                 serverSocket.close();
             }
         }
     }
 
-    // Based on code from AdvancedCustomProtocol sample
-    static void send(DatagramSocket socket, byte[] toSend) throws IOException {
-        int maxBufferLength = 1024 - 12;
-        int packetsTotal = toSend.length / maxBufferLength + 1;
-        int offset = 0;
-        int packetNum = 0;
-        boolean test = true;
-        while (test) {
-            int bytesLeftToSend = toSend.length - offset;
-            int length = Math.min(maxBufferLength, bytesLeftToSend);
+    public static JSONObject namePrompt() {
+        JSONObject json = new JSONObject();
+        json.put("datatype", 1);
+        json.put("type", "namePrompt");
+        json.put("data", "HEY! What's your name!?.");
 
-            System.out.println(packetsTotal);
-            System.out.println(packetNum);
-            System.out.println(length + "\n");
-
-            byte[] totalBytes = ByteBuffer.allocate(4).putInt(packetsTotal).array();
-            byte[] currentBytes = ByteBuffer.allocate(4).putInt(packetNum).array();
-            byte[] lengthBytes = ByteBuffer.allocate(4).putInt(length).array();
-
-            System.out.println(Arrays.toString(totalBytes));
-            System.out.println(Arrays.toString(currentBytes));
-            System.out.println(Arrays.toString(lengthBytes));
-
-            byte[] buffer = new byte[12 + length];
-            System.arraycopy(totalBytes, 0, buffer, 0, 4);
-            System.arraycopy(currentBytes, 0, buffer, 4, 4);
-            System.arraycopy(lengthBytes, 0, buffer, 8, 4);
-            System.arraycopy(toSend, offset, buffer, 12, length);
-
-            DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
-            socket.send(packet);
-            packetNum++;
-            offset += length;
-
-            test = false;
-        }
+        return json;
     }
 
+    public static JSONObject sendImage() throws IOException {
+        JSONObject json = new JSONObject();
+        json.put("datatype", 2);
+
+        json.put("type", "image");
+
+        File file = new File("img/To-Funny-For-Words1.png");
+        if (!file.exists()) {
+            System.err.println("Cannot find file: " + file.getAbsolutePath());
+            System.exit(-1);
+        }
+        // Read in image
+        BufferedImage img = ImageIO.read(file);
+        byte[] bytes = null;
+        try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+            ImageIO.write(img, "png", out);
+            bytes = out.toByteArray();
+        }
+        if (bytes != null) {
+            Base64.Encoder encoder = Base64.getEncoder();
+            json.put("data", encoder.encodeToString(bytes));
+            return json;
+        }
+        return error("Unable to save image to byte array");
+    }
+
+    public static JSONObject error(String err) {
+        JSONObject json = new JSONObject();
+        json.put("error", err);
+        return json;
+    }
 
     static JSONObject createMessage(String type) {
         JSONObject message = new JSONObject();
@@ -107,17 +136,5 @@ public class Server {
             message.put("text", "we ded");
         }
         return message;
-    }
-
-    static class Tuple {
-        public final InetAddress Address;
-        public final int Port;
-        public final byte[] Payload;
-
-        public Tuple(InetAddress address, int port, byte[] payload) {
-            Address = address;
-            Port = port;
-            Payload = payload;
-        }
     }
 }

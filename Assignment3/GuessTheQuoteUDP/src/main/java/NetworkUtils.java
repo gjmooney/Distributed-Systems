@@ -1,5 +1,3 @@
-package fauxSolution.udp;
-
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
@@ -47,6 +45,7 @@ public class NetworkUtils {
       System.arraycopy(bytes, offset, buffer, 12, length);
       
       DatagramPacket packet = new DatagramPacket(buffer, buffer.length, addr, port);
+      //DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
       sock.send(packet);
       
       packetNum++;

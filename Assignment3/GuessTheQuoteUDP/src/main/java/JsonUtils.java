@@ -1,5 +1,3 @@
-package fauxSolution.udp;
-
 import org.json.JSONObject;
 
 public class JsonUtils {
