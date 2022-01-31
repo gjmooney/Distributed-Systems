@@ -137,27 +137,27 @@ public class Server {
         JSONObject objHeader = new JSONObject();
         JSONObject objPayload = new JSONObject();
         String imageToSend;
-        textFromClient = textFromClient.toLowerCase(Locale.ROOT);
+        String userEntry = textFromClient.toLowerCase(Locale.ROOT);
         switch (state) {
             case 1:
                 // Ask clients name
                 imageToSend = encodeImage("hi");
 
                 // NOTE: Not text from client here but whatever
-                objectToSend = createJSONObject(true, state, imageToSend, textFromClient);
+                objectToSend = createJSONObject(true, state, imageToSend, userEntry);
                 setState(getState() + 1);
                 break;
             case 2:
                 // Greet client by name
                 //add player name to list for leaderboard if they're not already added
-                if (textFromClient.equals("quit")) {
+                if (userEntry.equals("quit")) {
                     String response = "OKAY BYE BYE!";
                     imageToSend = encodeImage("hi");
                     objectToSend = createJSONObject(true, 5, imageToSend, response);
                     clientPlaying = false;
                 } else {
                     if (firstTime) {
-                        playerName = textFromClient;
+                        playerName = userEntry;
                     }
                     String reply = "Hello " + playerName + ". If you want to see the leaderboard " +
                             "enter leader or enter start to start the game!";
@@ -169,14 +169,14 @@ public class Server {
                 break;
             case 3:
                 // Ask if client wants to see the leaderboard or start the game
-                if (textFromClient.equals("start")) {
+                if (userEntry.equals("start")) {
                     imageToSend = encodeImage("quote");
                     String response = "Who said the quote?";
                     objectToSend = createJSONObject(true, state, imageToSend, response);
                     timeLimit = LocalTime.now().plusMinutes(1);
                     setState(getState() + 1);
                     break;
-                } else if (textFromClient.equals("leader")) {
+                } else if (userEntry.equals("leader")) {
                     imageToSend = encodeImage("question");
                     String response = gameLogic.displayLeaderboard();
                     objectToSend = createJSONObject(true, state, imageToSend, response);
@@ -193,7 +193,7 @@ public class Server {
                 gameLogic.checkTimer(timeLimit, timeReceived);
 
                 if (!gameLogic.isGameOver()) {
-                    if (textFromClient.equals("more")) {
+                    if (userEntry.equals("more")) {
                         //get another quote form the same character
                         String response;
                         int quoteNum = gameLogic.getQuoteNumber();
@@ -209,7 +209,7 @@ public class Server {
                         objPayload.put("image", imageToSend);
                         objectToSend = createJSONObject(true, state, imageToSend, response);
 
-                    } else if (textFromClient.equals("next")) {
+                    } else if (userEntry.equals("next")) {
                         imageToSend = encodeImage("quote");
                         String response = "Okay! Here's another one! Also, you just lost 2 points";
                         gameLogic.setScore(gameLogic.getScore() - 2);
@@ -217,7 +217,7 @@ public class Server {
 
                     } else {
                         // check if the answer is right and set the boolean in gameLogic
-                        gameLogic.checkAnswer(textFromClient);
+                        gameLogic.checkAnswer(userEntry);
 
                         //TODO can combine these ifs but thats maybe bad actually
                         String response;
@@ -264,7 +264,7 @@ public class Server {
                     imageToSend = encodeImage("lose");
                     String response = "Sorry, you ran out of time!\nYou finished with "
                             + gameLogic.getScore() + " points." +
-                            "\nEnter your name to play again, or quit to stop playing.";;
+                            "\nEnter your name to play again, or quit to stop playing.";
                     objectToSend = createJSONObject(true, state, imageToSend, response);
                     resetGame();
                 }

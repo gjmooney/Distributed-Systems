@@ -14,7 +14,6 @@ import java.io.ObjectOutputStream;
 import java.net.Socket;
 import java.util.Base64;
 import java.util.Map;
-import java.util.Scanner;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
