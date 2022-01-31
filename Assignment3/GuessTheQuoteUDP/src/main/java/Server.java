@@ -1,25 +1,44 @@
 import org.json.JSONObject;
+import org.json.JSONTokener;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.IOException;
-import java.net.DatagramPacket;
+import java.io.*;
 import java.net.DatagramSocket;
-import java.net.InetAddress;
-import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
-import java.util.Base64;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.time.LocalTime;
+import java.time.temporal.ChronoUnit;
+import java.util.*;
+
 
 public class Server {
+    private String payloadFromClient;
+    private String status;
+    private String charChoice;
+    private int imgChoice;
+    private int state;
+    private int characterIndex;
+    private GameLogic gameLogic;
+    private String prevImage;
+    private LocalTime timeLimit;
+    private LocalTime timeReceived;
+    private String playerName;
+    private boolean firstTime;
+    private boolean clientPlaying;
 
-    public static void main(String[] args) {
-        DatagramSocket serverSocket = null;
+    public Server() throws FileNotFoundException {
+        this.setState(0);
+        this.setPayloadFromClient("");
+        this.status = "";
+        this.gameLogic = new GameLogic();
+        this.firstTime = true;
+    }
 
+    public void run(String[] args) throws IOException {
+        int count = 0;
+        DatagramSocket serverSock = null;
         int port = 9000;
-        int state = 1;
 
         if (args.length > 1) {
             System.out.println("Expected one argument: <port(int)>");
@@ -35,106 +54,274 @@ public class Server {
         }
 
         try {
-            serverSocket = new DatagramSocket(9000);
-            // NOTE: SINGLE-THREADED, only one connection at a time
+            serverSock = new DatagramSocket(port);
+            setState(1);
             while (true) {
                 try {
-                    while (true) {
-                        NetworkUtils.Tuple messageTuple = NetworkUtils.Receive(serverSocket);
-                        JSONObject message = JsonUtils.fromByteArray(messageTuple.Payload);
-                        JSONObject returnMessage;
-                        if (message.get("type").equals("acknowledge")) {
-                            returnMessage = namePrompt();
-                        } else if (message.get("type").equals("nameResponse")) {
-                            returnMessage = sendImage();
-                        } else {
-                            returnMessage = error("Invalid message received");
-                        }
-                       /* if (message.has("selected")) {
-                            if (message.get("selected") instanceof Long || message.get("selected") instanceof Integer) {
-                                int choice = message.getInt("selected");
-                                switch (choice) {
-                                    case (1):
-                                        returnMessage = namePrompt();
-                                        break;
-                                    case (2):
-                                        returnMessage = image();
-                                        break;
-                                    default:
-                                        returnMessage = error("Invalid selection: " + choice + " is not an option");
-                                }
-                            } else {
-                                returnMessage = error("Selection must be an integer");
-                            }
-                        } else {
-                            returnMessage = error("Invalid message received");
-                        }*/
 
-                        byte[] output = JsonUtils.toByteArray(returnMessage);
-                        NetworkUtils.Send(serverSocket, messageTuple.Address, messageTuple.Port, output);
+                    System.out.println("Waiting for client to connect");
+                    clientPlaying = true;
+                    System.out.println("Server accepted socket");
+
+                    while (clientPlaying) {
+                        NetworkUtils.Tuple messageTuple = NetworkUtils.Receive(serverSock);
+                        JSONObject message = JsonUtils.fromByteArray(messageTuple.Payload);
+                        JSONObject sendToClient = null;
+                        receiveFromClient(message);
+                        sendToClient = createResponse(getState(), getPayloadFromClient());
+                        byte[] output = JsonUtils.toByteArray(sendToClient);
+                        NetworkUtils.Send(serverSock, messageTuple.Address, messageTuple.Port, output);
+
+                        System.out.println("SERVER: END OF WHILE");
                     }
-                } catch (IOException e) {
+                } catch (Exception e) {
                     e.printStackTrace();
+                    System.out.println("Client disconnected");
                 }
             }
-        } catch (IOException e) {
+        } catch (Exception e) {
             e.printStackTrace();
+            System.out.println("Could not establish connection over port: " + port);
+            System.exit(2);
         } finally {
-            if (serverSocket != null) {
-                System.out.println("Closing socket");
-                serverSocket.close();
+            if (serverSock != null) {
+                System.out.println("Closing server socket");
+                serverSock.close();
             }
         }
     }
 
-    public static JSONObject namePrompt() {
-        JSONObject json = new JSONObject();
-        json.put("datatype", 1);
-        json.put("type", "namePrompt");
-        json.put("data", "HEY! What's your name!?.");
+    public void receiveFromClient(JSONObject jsonData) {
+        try {
 
-        return json;
+            JSONObject headerJSON = (JSONObject) jsonData.get("header");
+            JSONObject payloadJSON = (JSONObject) jsonData.get("payload");
+            Map header = headerJSON.toMap();
+            Map payload = payloadJSON.toMap();
+            //setState((int) header.get("state"));
+            //String reply = ((String) payload.get("text"));
+            setPayloadFromClient(((String) payload.get("text")));
+            timeReceived = LocalTime.now();
+            System.out.println("[RECEIVE FROM CLIENT] " + getPayloadFromClient());
+
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.out.println("Error receiving from client");
+        }
     }
 
-    public static JSONObject sendImage() throws IOException {
-        JSONObject json = new JSONObject();
-        json.put("datatype", 2);
+    //create a response to send to the client
+    public JSONObject createResponse(int state, String textFromClient) throws IOException {
+        JSONObject objectToSend = new JSONObject();
+        JSONObject objHeader = new JSONObject();
+        JSONObject objPayload = new JSONObject();
+        String imageToSend;
+        String userEntry = textFromClient.toLowerCase(Locale.ROOT);
+        switch (state) {
+            case 1:
+                // Ask clients name
+                imageToSend = encodeImage("hi");
 
-        json.put("type", "image");
+                // NOTE: Not text from client here but whatever
+                objectToSend = createJSONObject(true, state, imageToSend, "What your name");
+                setState(getState() + 1);
+                break;
+            case 2:
+                // Greet client by name
+                //add player name to list for leaderboard if they're not already added
+                if (userEntry.equals("quit")) {
+                    String response = "OKAY BYE BYE!";
+                    imageToSend = encodeImage("hi");
+                    objectToSend = createJSONObject(true, 5, imageToSend, response);
+                    clientPlaying = false;
+                } else {
+                    if (firstTime) {
+                        playerName = userEntry;
+                    }
+                    String reply = "Hello " + playerName + ". Check out this cute lil' piggie!" +
+                            "\nThat's it, enter quit to exit.";
+                    imageToSend = encodeImage("cute");
+                    objectToSend = createJSONObject(true, state, imageToSend, reply);
+                    setState(getState() + 1);
+                    firstTime = false;
+                }
+                break;
+            case 3:
+                if (userEntry.equals("quit")) {
+                    String response = "OKAY BYE BYE!";
+                    imageToSend = encodeImage("hi");
+                    objectToSend = createJSONObject(true, 5, imageToSend, response);
+                    clientPlaying = false;
+                } else {
+                    String response = "Sorry I didn't understand that. Please quit to qui";
+                    imageToSend = encodeImage("question");
+                    objectToSend = createJSONObject(true, state, imageToSend, response);
 
-        File file = new File("img/To-Funny-For-Words1.png");
-        if (!file.exists()) {
-            System.err.println("Cannot find file: " + file.getAbsolutePath());
-            System.exit(-1);
+                }
+                break;
+            default:
+                imageToSend = encodeImage("question");
+                String response = "ERROR ERROR EROOR";
+                objectToSend = createJSONObject(false, state, imageToSend, response);
+                setState(7);
+                break;
         }
-        // Read in image
-        BufferedImage img = ImageIO.read(file);
+        return objectToSend;
+    }
+
+    public void resetGame() {
+        firstTime = true;
+        setState(2);
+        gameLogic.resetGame();
+    }
+
+    public JSONObject createJSONObject(boolean ok, int state, String image, String text) {
+        JSONObject header = new JSONObject();
+        JSONObject payload = new JSONObject();
+        JSONObject JSONToSend = new JSONObject();
+
+        header.put("state", state);
+        header.put("type", "JSON");
+        header.put("ok", ok);
+
+        payload.put("image", image);
+        if (state == 1 || state == 2) {
+            payload.put("score", 0);
+        } else {
+            payload.put("score", gameLogic.getScore());
+        }
+        payload.put("text", text);
+
+        JSONToSend.put("header", header);
+        JSONToSend.put("payload", payload);
+
+        return JSONToSend;
+    }
+
+    public String chooseCharacterAndQuote(boolean first) {
+        String[] characters = {"Captain_America", "Darth_Vader", "Homer_Simpson", "Jack_Sparrow",
+                                "Joker", "Tony_Stark", "Wolverine"};
+
+        if (first) {
+            Random rand = new Random();
+            characterIndex = rand.nextInt(7);
+        } else {
+            characterIndex = (characterIndex + 1) % 7;
+        }
+
+        int quoteNumber = gameLogic.getQuoteNumber(characters[characterIndex]);
+
+        gameLogic.saveChoices(characters[characterIndex], quoteNumber);
+        String filename = "src/main/resources/img/" + characters[characterIndex]
+                + "/quote" + quoteNumber + ".png";
+
+        return filename;
+    }
+
+    public String chooseNewQuote() {
+        String character = gameLogic.getQuoteCharacter();
+        int quoteNumber = gameLogic.getQuoteNumber(character);
+        gameLogic.saveChoices(character, quoteNumber);
+        String filename = "src/main/resources/img/" + character
+                + "/quote" + quoteNumber + ".png";
+
+        return filename;
+    }
+
+    public String encodeImage(String imageType) throws IOException {
+        String encodedImage;
+        File file;
+        if (imageType.equals("hi")) {
+            //String path = Server.class.getResource("/img/hi.png").getFile();
+            file = new File("src/main/hi.png");
+
+        } else if (imageType.equals("cute")) {
+            file = new File("src/main/cutePiggie.jpg");
+        } else {
+            file = new File("/nope");
+        }
+        if (!file.exists()) {
+            System.out.println("File not found: " + file.getAbsolutePath());
+            return "File not found";
+        }
+        BufferedImage image = ImageIO.read(file);
         byte[] bytes = null;
-        try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
-            ImageIO.write(img, "png", out);
-            bytes = out.toByteArray();
+        try (ByteArrayOutputStream output = new ByteArrayOutputStream()) {
+            ImageIO.write(image, "png", output);
+            bytes = output.toByteArray();
         }
         if (bytes != null) {
             Base64.Encoder encoder = Base64.getEncoder();
-            json.put("data", encoder.encodeToString(bytes));
-            return json;
+            encodedImage = encoder.encodeToString(bytes);
+            setPrevImage(encodedImage); // save image we just encoded
+            return encodedImage;
         }
-        return error("Unable to save image to byte array");
+        return "Unable to encode image";
     }
 
-    public static JSONObject error(String err) {
-        JSONObject json = new JSONObject();
-        json.put("error", err);
-        return json;
+    public static void main(String[] args) throws IOException {
+        Server mainServer = new Server();
+        LocalTime now = LocalTime.now();
+        System.out.println(now);
+        now.plusMinutes(1);
+        System.out.println(now.minus(60, ChronoUnit.SECONDS));
+        try {
+            mainServer.run(args);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.out.println("Yo your server broke bruh");
+            System.exit(1);
+        }
     }
 
-    static JSONObject createMessage(String type) {
-        JSONObject message = new JSONObject();
-        if (type.equals("name")) {
-            message.put("text", "HEY! What's your name!?");
-        } else if (type.equals("broke")) {
-            message.put("text", "we ded");
-        }
-        return message;
+    public String getPayloadFromClient() {
+        return payloadFromClient;
+    }
+
+    public void setPayloadFromClient(String payloadFromClient) {
+        this.payloadFromClient = payloadFromClient;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
+    public int getState() {
+        System.out.println("STATE: " + state);
+        return state;
+    }
+
+    public void setState(int state) {
+        this.state = state;
+    }
+
+    public String getCharChoice() {
+        return charChoice;
+    }
+
+    public void setCharChoice(String charChoice) {
+        this.charChoice = charChoice;
+    }
+
+    public int getImgChoice() {
+        return imgChoice;
+    }
+
+    public void setImgChoice(int imgChoice) {
+        this.imgChoice = imgChoice;
+    }
+
+    public String getPrevImage() {
+        return prevImage;
+    }
+
+    public void setPrevImage(String prevImage) {
+        this.prevImage = prevImage;
     }
 }

@@ -20,7 +20,7 @@ task runClient(type: JavaExec) {
   classpath = sourceSets.main.runtimeClasspath
   group 'gui'
   description 'Displays a GUI for a game of concentration'
-  main = 'Client'
+  main = 'ClientGui'
   standardInput = System.in
   
   args host
