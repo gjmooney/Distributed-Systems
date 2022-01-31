@@ -6,6 +6,16 @@ mainClassName = 'Concentration'
 
     def host = 'localhost'
     def port = 8080
+    
+// task reading in the arguments if any given, if not the default from above will be used
+task arguments {
+    if (project.hasProperty("host")) {
+      host = project.getProperty("host")
+    }
+    if (project.hasProperty("port")) {
+      port = project.getProperty("port")
+    }
+}
 
 repositories {
     mavenCentral()
