@@ -5,4 +5,7 @@
 # Compiled class file
 *.class
 
+#IntelliJ
 .idea
+**.iml
+
