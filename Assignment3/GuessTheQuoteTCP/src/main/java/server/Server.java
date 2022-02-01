@@ -77,10 +77,11 @@ public class Server {
                         outputStream.flush();
                     }
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    //e.printStackTrace();
                 } finally {
                     if (clientSocket != null) {
                         System.out.println("Closing client socket");
+                        resetGame();
                         setState(1);
                         inputStream.close();
                         outputStream.close();
@@ -186,7 +187,8 @@ public class Server {
                         String response;
                         int quoteNum = gameLogic.getQuoteNumber();
                         if (quoteNum < 4) {
-                            response = "Here's another quote from that character";
+                            response = "Here's another quote from that character" +
+                                "Enter more, next, or your guess";
                             imageToSend = encodeImage("more");
                             gameLogic.setNumberOfGuesses(gameLogic.getNumberOfGuesses() + 1);
                         } else {

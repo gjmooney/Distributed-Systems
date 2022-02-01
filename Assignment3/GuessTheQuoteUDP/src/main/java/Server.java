@@ -35,6 +35,7 @@ public class Server {
     }
 
     public void run(String[] args) {
+        System.out.println("[RUN]" + Arrays.toString(args));
         DatagramSocket serverSock = null;
         int port = 9000;
 
@@ -54,12 +55,12 @@ public class Server {
         try {
             serverSock = new DatagramSocket(port);
             setState(1);
-            while (true) {
+            boolean keepGoing = true;
+            while (keepGoing) {
                 try {
 
-                    System.out.println("Waiting for client to connect");
+                    System.out.println("Waiting for client");
                     clientPlaying = true;
-                    System.out.println("Server accepted socket");
 
                     while (clientPlaying) {
                         NetworkUtils.Tuple messageTuple = NetworkUtils.Receive(serverSock);
@@ -70,6 +71,7 @@ public class Server {
                         byte[] output = JsonUtils.toByteArray(sendToClient);
                         NetworkUtils.Send(serverSock, messageTuple.Address, messageTuple.Port, output);
                     }
+                    keepGoing = false;
                 } catch (Exception e) {
                     e.printStackTrace();
                     System.out.println("Client disconnected");
@@ -140,7 +142,6 @@ public class Server {
                     clientPlaying = false;
                     resetGame();
                 } else {
-                    System.out.println("BUTTS");
                     String response = "Sorry I didn't understand that. Please enter quit to quit";
                     imageToSend = encodeImage("question");
                     objectToSend = createJSONObject(true, state, imageToSend, response);
@@ -249,6 +250,7 @@ public class Server {
     }
 
     public static void main(String[] args) {
+        System.out.println(Arrays.toString(args));
         Server mainServer = new Server();
         try {
             mainServer.run(args);
