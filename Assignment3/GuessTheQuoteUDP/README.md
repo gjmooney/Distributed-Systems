@@ -9,7 +9,7 @@ The server shuts down when the client quits.
 ## Checklist
 - [x] Client connects to server  
 - [x] The server asks the name of the player  
-- [x] The client sends thier name to the server  
+- [x] The client sends their name to the server  
 - [x] The server receives the name and greets the player  
 - [x] The server sends the client a picture of a cute pig
 
@@ -62,7 +62,7 @@ payload : {
     ok : true | false  
     }   
 payload : {  
-    text : message to be printed on c lient GUI   
+    text : message to be printed on client GUI   
     image : String encoding of the image  
     score : the clients score   
     }  
