@@ -29,7 +29,7 @@ with the desired port and host IP
 Defaults are Port = 8080 and host = 'localhost'
 
 ## UML Diagram
-![UML](https://github.com/gjmooney/ser321-spring2022-A-gjmooney/blob/0a7c3ea1ee721f580b86acf13ecb8dd138d59d91/Assignment3/GuessTheQuoteTCP/Sequence%20Diagram.png "UML Diagram")
+![UML](https://github.com/gjmooney/ser321-spring2022-A-gjmooney/blob/a27f7086f971c55cabdda6f2e99f911cb9abae97/Assignment3/GuessTheQuoteUDP/SequenceDiagram.png "UML Diagram")
 
 ## Protocol
 The protocol I used is pretty simple. It is a JSONObject consisting of a header and a payload. The header contains state information, the type of data being sent, and an 'ok' flag. The payload consists of the image, score, and text to be displayed.  
