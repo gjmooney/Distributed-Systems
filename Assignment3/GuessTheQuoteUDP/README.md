@@ -1,5 +1,8 @@
 # Assignment 3 - Guess The Quote
 
+## Recording Link
+https://youtu.be/DHiZzQkAURc
+
 ## Description
 This program is a UDP version of a server/client quote guessing game. Both the server and clients are started via gradle with options to set the host name and port number. The games starts when a client connects to the server. The server sends a prompt asking for the clients name, upon receiving the name the client greets the client and presents them with a picture of a very cute pig.  
 
