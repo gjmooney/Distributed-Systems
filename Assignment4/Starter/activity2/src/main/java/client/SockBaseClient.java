@@ -43,6 +43,8 @@ class SockBaseClient {
         return request;
     }
 
+    //TODO can actually replace with setting the while loops to false and it should
+    // drop though to the finally
     public static void exit(Socket serverSock, OutputStream out, InputStream in) {
         try {
             serverSock.close();
@@ -76,10 +78,18 @@ class SockBaseClient {
                 response = Response.parseDelimitedFrom(in);
 
                 if (response.getResponseType() == Response.ResponseType.TASK) {
+                    System.out.println(response.getMessage());
+                    System.out.println();
                     System.out.println(response.getImage());
                     System.out.println();
-                    System.out.println(response.getTask());
-                }else if (response.getResponseType() == Response.ResponseType.BYE) {
+                    System.out.println("Your task: " + response.getTask());
+                } else if(response.getResponseType() == Response.ResponseType.WON) {
+                    System.out.println();
+                    System.out.println(response.getImage());
+                    System.out.println(response.getMessage());
+                    gameOn = false;
+                } else if (response.getResponseType() == Response.ResponseType.BYE) {
+                    System.out.println(response.getImage());
                     System.out.println(response.getMessage());
                     exit(serverSock, out, in);
                 }
@@ -192,25 +202,13 @@ class SockBaseClient {
                             System.out.println(response.getMessage());
                             exit(serverSock, out, in);
                         }
-
-                        //receive response from server
-                        /* if response has error
-                            print error
-                        else
-                            handle response
-                         */
                     }
-
-
                 } catch (Exception e) {
                     e.printStackTrace();
                     input = new Scanner(System.in);
                     System.out.println("Please Enter a valid number");
                 }
-
             } while (true);
-
-
         } catch (Exception e) {
             e.printStackTrace();
         } finally {

@@ -70,21 +70,32 @@ class Server {
     public Response evalResponse(String answer) {
         boolean eval = game.getCorrectAnswer().equals(answer);
         String message;
+        Response response;
+
         if (eval) {
             message = "GOOD JOB";
-            game.replaceOneCharacter();
+            game.replaceHalfCharacter();
         } else {
             message = "OOOOO NAWP";
         }
 
-        Response response = Response.newBuilder()
-                .setResponseType(Response.ResponseType.TASK)
-                .setImage(game.getImage())
-                .setTask(game.chooseTask())
-                .setEval(eval)
-                .setMessage(message)
-                .build();
+        if (game.getImage().equals(game.getOriginalImage())) {
+            response = Response.newBuilder()
+                    .setResponseType(Response.ResponseType.WON)
+                    .setImage(game.getImage())
+                    .setMessage("YOU WON BRO\nLETS PLAY AGAIN!!!!!!!")
+                    .build();
+        } else {
+            response = Response.newBuilder()
+                    .setResponseType(Response.ResponseType.TASK)
+                    .setImage(game.getImage())
+                    .setTask(game.chooseTask())
+                    .setEval(eval)
+                    .setMessage(message)
+                    .build();
+        }
         return response;
+
     }
 
     public Response quitResponse() {

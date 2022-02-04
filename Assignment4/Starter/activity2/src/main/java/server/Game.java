@@ -137,6 +137,15 @@ public class Game {
         return sb.toString();
     }
 
+    public String getOriginalImage(){
+        StringBuilder sb = new StringBuilder();
+        for (char[] subArray : original) {
+            sb.append(subArray);
+            sb.append("\n");
+        }
+        return sb.toString();
+    }
+
     /**
      * Method changes the next idx of the hidden image to the character in the original image
      * You can change this method if you want to turn more than one x to the original
@@ -147,6 +156,18 @@ public class Game {
         int rowNumber = idx/col;
         hidden[rowNumber][colNumber] = original[rowNumber][colNumber];
         idx++;
+        return(getImage());
+    }
+
+    public String replaceHalfCharacter() {
+
+        for (int i = 0; i < col/2; i++) {
+            int colNumber = idx%col;
+            int rowNumber = idx/col;
+            hidden[rowNumber][colNumber] = original[rowNumber][colNumber];
+            idx++;
+        }
+
         return(getImage());
     }
 
