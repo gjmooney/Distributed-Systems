@@ -1,10 +1,7 @@
 package server;
-import client.Player;
 import org.json.JSONObject;
-import org.json.JSONTokener;
 
-import java.util.Scanner;
-import java.util.*; 
+import java.util.*;
 import java.io.*;
 
 /**
@@ -27,6 +24,7 @@ public class Game {
     private boolean won; // if the game is won or not
     private List<String> files = new ArrayList<String>(); // list of files, each file has one image
     JSONObject leaderboard;
+    private String correctAnswer;
 
 
     public Game(){
@@ -152,6 +150,28 @@ public class Game {
         return(getImage());
     }
 
+    public String chooseTask() {
+        Random rand = new Random();
+        int task = rand.nextInt(2);
+        String taskText;
+
+        switch (task) {
+            case (0):
+                taskText = "Enter e";
+                setCorrectAnswer("e");
+                break;
+            case (1):
+                taskText = "Whats 2 * 3 ?";
+                setCorrectAnswer(String.valueOf(6));
+                break;
+            default:
+                taskText = "we broke";
+                setCorrectAnswer("yerp");
+                break;
+        }
+        return taskText;
+    }
+
     public int getIdxMax() {
         return idxMax;
     }
@@ -166,5 +186,13 @@ public class Game {
 
     public void setIdx(int idx) {
         this.idx = idx;
+    }
+
+    public String getCorrectAnswer() {
+        return correctAnswer;
+    }
+
+    public void setCorrectAnswer(String correctAnswer) {
+        this.correctAnswer = correctAnswer;
     }
 }

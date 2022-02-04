@@ -21,6 +21,13 @@ class SockBaseClient {
         return request;
     }
 
+    public static Request startGameRequest() {
+        Request request = Request.newBuilder()
+                .setOperationType(Request.OperationType.NEW)
+                .build();
+        return request;
+    }
+
     public static Request quitRequest() {
         Request request = Request.newBuilder()
                 .setOperationType(Request.OperationType.QUIT)
@@ -97,7 +104,7 @@ class SockBaseClient {
                             request = leaderboardRequest();
                             break;
                         case (2):
-                            // build start game request
+                            request = startGameRequest();
                             break;
                         case (3):
                             request = quitRequest();
@@ -116,6 +123,13 @@ class SockBaseClient {
                             for (Entry player : response.getLeaderList()) {
                                 System.out.println(player.getName() + ": " + player.getWins());
                             }
+                        }
+
+                        if (response.getResponseType() == Response.ResponseType.TASK) {
+                            System.out.println(response.getImage());
+                            System.out.println();
+                            System.out.println(response.getTask());
+
                         }
 
                         if (response.getResponseType() == Response.ResponseType.BYE) {

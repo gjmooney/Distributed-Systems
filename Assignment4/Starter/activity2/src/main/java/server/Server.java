@@ -57,6 +57,16 @@ class Server {
         return res.build();
     }
 
+    public Response startGameResponse() {
+        game.newGame();
+        Response response = Response.newBuilder()
+                .setResponseType(Response.ResponseType.TASK)
+                .setImage(game.getImage())
+                .setTask(game.chooseTask())
+                .build();
+        return response;
+    }
+
     public Response quitResponse() {
         Response response = Response.newBuilder()
                 .setResponseType(Response.ResponseType.BYE)
@@ -105,6 +115,10 @@ class Server {
 
                 if (request.getOperationType() == Request.OperationType.LEADER) {
                     response = leaderBoardResponse();
+                }
+
+                if (request.getOperationType() == Request.OperationType.NEW) {
+                    response = startGameResponse();
                 }
 
                 if (request.getOperationType() == Request.OperationType.QUIT) {
