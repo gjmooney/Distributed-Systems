@@ -187,6 +187,7 @@ class SockBaseServer {
 
     public static void main (String args[]) throws Exception {
         Game game = new Game();
+        int id = 0;
 
         if (args.length != 2) {
             System.out.println("Expected arguments: <port(int)> <delay(int)>");
@@ -204,17 +205,25 @@ class SockBaseServer {
             System.out.println("[Port|sleepDelay] must be an integer");
             System.exit(2);
         }
+
         try {
             serv = new ServerSocket(port);
-        } catch(Exception e) {
+            while (true) {
+                System.out.println("Waiting for client to connect");
+                clientSocket = serv.accept();
+                System.out.println("Client " + id++ + " connected");
+                SockBaseServer server = new SockBaseServer(clientSocket, game);
+                System.out.println("TEST");
+                server.start();
+            }
+        } catch (Exception e) {
             e.printStackTrace();
-            System.exit(2);
+        } finally {
+            if (serv != null) {
+                System.out.println("Server closing socket");
+                serv.close();
+            }
         }
-
-        clientSocket = serv.accept();
-        SockBaseServer server = new SockBaseServer(clientSocket, game);
-        server.start();
-
     }
 }
 
