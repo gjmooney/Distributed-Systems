@@ -1,4 +1,8 @@
 package server;
+import client.Player;
+import org.json.JSONObject;
+import org.json.JSONTokener;
+
 import java.util.Scanner;
 import java.util.*; 
 import java.io.*;
@@ -9,7 +13,7 @@ import java.io.*;
  * Class can be used to hold the persistent state for a game for different threads
  * synchronization is not taken care of .
  * You can change this Class in any way you like or decide to not use it at all
- * I used this class in my SockBaseServer to create a new game and keep track of the current image evenon differnt threads. 
+ * I used this class in my Server to create a new game and keep track of the current image evenon differnt threads.
  * My threads each get a reference to this Game
  */
 
@@ -22,10 +26,13 @@ public class Game {
     private int row; // rows in original and hidden
     private boolean won; // if the game is won or not
     private List<String> files = new ArrayList<String>(); // list of files, each file has one image
+    JSONObject leaderboard;
 
 
     public Game(){
-        // you can of course add more or change this setup completely. You are totally free to also use just Strings in your Server class instead of this class
+        // you can of course add more or change this setup completely.
+        // You are totally free to also use just Strings in your Server class
+        // instead of this class
         won = true; // setting it to true, since then in newGame() a new image will be created
         files.add("pig.txt");
         files.add("snail.txt");
@@ -35,8 +42,19 @@ public class Game {
         files.add("joke1.txt");
         files.add("joke2.txt");
         files.add("joke3.txt");
+        leaderboard = tempMakeLeaderBoard();
     }
 
+    public JSONObject tempMakeLeaderBoard() {
+        JSONObject leaderboard = new JSONObject();
+        
+
+        leaderboard.put("bob", 100);
+        leaderboard.put("chris", 50);
+
+
+        return leaderboard;
+    }
     /**
      * Sets the won flag to true
      * @param args Unused.
@@ -44,6 +62,10 @@ public class Game {
      */
     public void setWon(){
         won = true;
+    }
+
+    public JSONObject getLeaderboard() {
+        return leaderboard;
     }
 
     /**

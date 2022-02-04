@@ -49,7 +49,7 @@ task runClient(type: JavaExec) {
 task runServer(type: JavaExec) {
   classpath = sourceSets.main.runtimeClasspath
   description = "Run Server"
-  main = 'server.SockBaseServer'
+  main = 'server.Server'
   // default args
   args port
   args '1000' // sleep delay will always be this

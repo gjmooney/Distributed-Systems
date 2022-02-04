@@ -3,7 +3,6 @@ package server;
 import java.net.*;
 import java.io.*;
 import java.util.*;
-import org.json.*;
 import java.lang.*;
 
 import buffers.RequestProtos.Request;
@@ -11,8 +10,10 @@ import buffers.RequestProtos.Logs;
 import buffers.RequestProtos.Message;
 import buffers.ResponseProtos.Response;
 import buffers.ResponseProtos.Entry;
+import client.Player;
+import org.json.JSONObject;
 
-class SockBaseServer {
+class Server {
     static String logFilename = "logs.txt";
 
     ServerSocket serv = null;
@@ -23,14 +24,14 @@ class SockBaseServer {
     Game game;
 
 
-    public SockBaseServer(Socket sock, Game game){
+    public Server(Socket sock, Game game){
         this.clientSocket = sock;
         this.game = game;
         try {
             in = clientSocket.getInputStream();
             out = clientSocket.getOutputStream();
         } catch (Exception e){
-            System.out.println("Error in constructor: " + e);
+            System.out.println("Error in Server constructor: " + e);
         }
     }
 
@@ -39,35 +40,71 @@ class SockBaseServer {
     // you can use this server as based or start a new one if you prefer. 
     public void start() throws IOException {
         String name = "";
-
+        boolean quit = false;
 
         System.out.println("Ready...");
         try {
-            // read the proto object and put into new objct
-            Request op = Request.parseDelimitedFrom(in);
-            String result = null;
+            // read the proto object and put into new object
+            Request nameRequest = Request.parseDelimitedFrom(in);
+            //String result = null;
 
-            
-
-            // if the operation is NAME (so the beginning then say there is a commention and greet the client)
-            if (op.getOperationType() == Request.OperationType.NAME) {
+            // if the operation is NAME (so the beginning then say there is a
+            // connection and greet the client)
+            if (nameRequest.getOperationType() == Request.OperationType.NAME) {
                 // get name from proto object
-            name = op.getName();
+                name = nameRequest.getName();
 
-            // writing a connect message to the log with name and CONNENCT
-            writeToLog(name, Message.CONNECT);
+                // writing a connect message to the log with name and CONNENCT
+                writeToLog(name, Message.CONNECT);
                 System.out.println("Got a connection and a name: " + name);
                 Response response = Response.newBuilder()
                         .setResponseType(Response.ResponseType.GREETING)
-                        .setMessage("Hello " + name + " and welcome. \nWhat would you like to do? \n 1 - to see the leader board \n 2 - to enter a game")
+                        .setMessage("Hello " + name + " and welcome.")
                         .build();
                 response.writeDelimitedTo(out);
+            } else {
+                //TODO something bad appen make an error
             }
 
-            // Example how to start a new game and how to build a response with the image which you could then send to the server
-            // LINE 67-108 are just an example for Protobuf and how to work with the differnt types. They DO NOT
+            while (!quit) {
+                // right now the client has their menu and were waiting on their
+                // new request
+                Request request = Request.parseDelimitedFrom(in);
+                String result = null;
+
+                if (request.getOperationType() == Request.OperationType.LEADER) {
+                    Response.Builder res = Response.newBuilder()
+                            .setResponseType(Response.ResponseType.LEADER);
+                            //look at the entry stuff below once there is a
+                            //leaderboard
+                    JSONObject lb = game.getLeaderboard();
+                    Iterator<String> players = lb.keys();
+
+                    while (players.hasNext()) {
+                        String key = players.next();
+                        //if (lb.get(key) instanceof int) {
+                            Entry entry = Entry.newBuilder()
+                                    .setName(key)
+                                    .setWins((int) lb.get(key))
+                                    .build();
+                            res.addLeader(entry);
+
+                       // }
+                    }
+                    Response response = res.build();
+                    response.writeDelimitedTo(out);
+                }
+
+            }
+
+            //now do the main loop
+
+            // Example how to start a new game and how to build a response with
+            // the image which you could then send to the server
+            // LINE 67-108 are just an example for Protobuf and how to work with
+            // the differnt types. They DO NOT
             // belong into this code. 
-            game.newGame(); // starting a new game
+           /* game.newGame(); // starting a new game
 
             // adding the String of the game to 
             Response response2 = Response.newBuilder()
@@ -76,7 +113,8 @@ class SockBaseServer {
                 .setTask("Great task goes here")
                 .build();
 
-            // On the client side you would receive a Response object which is the same as the one in line 70, so now you could read the fields
+            // On the client side you would receive a Response object which is
+            // the same as the one in line 70, so now you could read the fields
             System.out.println("Task: " + response2.getResponseType());
             System.out.println("Image: \n" + response2.getImage());
             System.out.println("Task: \n" + response2.getTask());
@@ -106,7 +144,7 @@ class SockBaseServer {
 
             for (Entry lead: response3.getLeaderList()){
                 System.out.println(lead.getName() + ": " + lead.getWins());
-            }
+            }*/
 
         } catch (Exception ex) {
             ex.printStackTrace();
@@ -212,8 +250,7 @@ class SockBaseServer {
                 System.out.println("Waiting for client to connect");
                 clientSocket = serv.accept();
                 System.out.println("Client " + id++ + " connected");
-                SockBaseServer server = new SockBaseServer(clientSocket, game);
-                System.out.println("TEST");
+                Server server = new Server(clientSocket, game);
                 server.start();
             }
         } catch (Exception e) {

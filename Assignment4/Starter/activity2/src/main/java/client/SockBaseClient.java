@@ -14,6 +14,13 @@ import java.util.stream.Collectors;
 
 class SockBaseClient {
 
+    public static Request leaderboardRequest() {
+        Request request = Request.newBuilder()
+                .setOperationType(Request.OperationType.LEADER)
+                .build();
+        return request;
+    }
+
     public static void main (String args[]) throws Exception {
         Socket serverSock = null;
         OutputStream out = null;
@@ -40,10 +47,10 @@ class SockBaseClient {
         String strToSend = stdin.readLine();
 
         // Build the first request object just including the name
-        Request op = Request.newBuilder()
+        Request nameRequest = Request.newBuilder()
                 .setOperationType(Request.OperationType.NAME)
                 .setName(strToSend).build();
-        Response response;
+        Response nameResponse;
 
         try {
             // connect to the server
@@ -54,14 +61,14 @@ class SockBaseClient {
             in = serverSock.getInputStream();
 
             // send name to server
-            op.writeDelimitedTo(out);
+            nameRequest.writeDelimitedTo(out);
 
             // read from the server
-            response = Response.parseDelimitedFrom(in);
+            nameResponse = Response.parseDelimitedFrom(in);
             // display greeting fomr the server
 
             // print the server response.
-            System.out.println(response.getMessage());
+            System.out.println(nameResponse.getMessage());
 
             // display menu after sending name
             int choice;
@@ -76,10 +83,11 @@ class SockBaseClient {
                 System.out.println();
                 try {
                     choice = input.nextInt();
-                    Request clientRequest = null;
+                    Request request = null;
+                    Response response;
                     switch (choice) {
                         case (1):
-                            // build leader board request
+                            request = leaderboardRequest();
                             break;
                         case (2):
                             // build start game request
@@ -90,6 +98,25 @@ class SockBaseClient {
                         default:
                             System.out.println("Please select a valid option (1, 2, or 3");
                             break;
+                    }
+
+                    if (request != null) {
+                        //send request to server
+                        request.writeDelimitedTo(out);
+                        response = Response.parseDelimitedFrom(in);
+
+                        if (response.getResponseType() == Response.ResponseType.LEADER) {
+                            for (Entry player : response.getLeaderList()) {
+                                System.out.println(player.getName() + ": " + player.getWins());
+                            }
+                        }
+
+                        //receive response from server
+                        /* if response has error
+                            print error
+                        else
+                            handle response
+                         */
                     }
 
 
