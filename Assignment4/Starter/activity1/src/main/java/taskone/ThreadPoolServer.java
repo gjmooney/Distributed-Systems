@@ -1,7 +1,7 @@
 /**
-  File: ThreadedServer.java
+  File: ThreadPoolServer.java
   Author: Student in Fall 2020B
-  Description: ThreadedServer class in package taskone.
+  Description: ThreadPoolServer class in package taskone.
 */
 
 package taskone;
@@ -10,8 +10,8 @@ import java.net.ServerSocket;
 import java.net.Socket;
 
 /**
- * Class: ThreadedServer
- * Description: ThreadedServer tasks.
+ * Class: ThreadPoolServer
+ * Description: ThreadPoolServer tasks.
  */
 class ThreadPoolServer {
 
@@ -32,7 +32,7 @@ class ThreadPoolServer {
             System.exit(2);
         }
         ServerSocket server = new ServerSocket(port);
-        System.out.println("ThreadedServer Started...");
+        System.out.println("ThreadPoolServer Started...");
         while (true) {
             System.out.println("Accepting a Request...");
             Socket sock = server.accept();
