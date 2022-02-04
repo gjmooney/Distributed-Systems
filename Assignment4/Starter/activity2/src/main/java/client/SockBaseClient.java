@@ -28,6 +28,14 @@ class SockBaseClient {
         return request;
     }
 
+    public static Request gameLoopRequest(String answer) {
+        Request request = Request.newBuilder()
+                .setOperationType(Request.OperationType.ANSWER)
+                .setAnswer(answer)
+                .build();
+        return request;
+    }
+
     public static Request quitRequest() {
         Request request = Request.newBuilder()
                 .setOperationType(Request.OperationType.QUIT)
@@ -35,34 +43,50 @@ class SockBaseClient {
         return request;
     }
 
-    public static void gameLoop(OutputStream out, InputStream in) {
+    public static void exit(Socket serverSock, OutputStream out, InputStream in) {
+        try {
+            serverSock.close();
+            out.close();
+            in.close();
+            System.exit(0);
+        } catch (IOException e) {
+            e.printStackTrace();
+            System.out.println("Problem shutting down client");
+        }
+
+    }
+
+    public static void gameLoop(Socket serverSock, OutputStream out, InputStream in) {
         boolean gameOn = true;
 
         while (gameOn) {
             System.out.println("Enter your answer: ");
             BufferedReader stdin = new BufferedReader(new InputStreamReader(System.in));
+            Request request;
             Response response = null;
             try {
                 String answer = stdin.readLine();
-                Request request = Request.newBuilder()
-                        .setOperationType(Request.OperationType.ANSWER)
-                        .setAnswer(answer)
-                        .build();
+                if (answer.toLowerCase(Locale.ROOT).equals("exit")) {
+                    request = quitRequest();
+                } else {
+                    request = gameLoopRequest(answer);
+                }
+
                 request.writeDelimitedTo(out);
                 response = Response.parseDelimitedFrom(in);
 
-
+                if (response.getResponseType() == Response.ResponseType.TASK) {
+                    System.out.println(response.getImage());
+                    System.out.println();
+                    System.out.println(response.getTask());
+                }else if (response.getResponseType() == Response.ResponseType.BYE) {
+                    System.out.println(response.getMessage());
+                    exit(serverSock, out, in);
+                }
             } catch (IOException e) {
                 e.printStackTrace();
                 System.out.println("YOU DID A BAD");
             }
-
-            if (response.getResponseType() == Response.ResponseType.TASK) {
-                System.out.println(response.getImage());
-                System.out.println();
-                System.out.println(response.getTask());
-            }
-
         }
     }
 
@@ -160,16 +184,13 @@ class SockBaseClient {
                             System.out.println(response.getImage());
                             System.out.println();
                             System.out.println(response.getTask());
-                            gameLoop(out, in);
+                            gameLoop(serverSock, out, in);
 
                         }
 
                         if (response.getResponseType() == Response.ResponseType.BYE) {
                             System.out.println(response.getMessage());
-                            serverSock.close();
-                            out.close();
-                            in.close();
-                            System.exit(0);
+                            exit(serverSock, out, in);
                         }
 
                         //receive response from server
