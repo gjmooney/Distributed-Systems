@@ -35,6 +35,37 @@ class SockBaseClient {
         return request;
     }
 
+    public static void gameLoop(OutputStream out, InputStream in) {
+        boolean gameOn = true;
+
+        while (gameOn) {
+            System.out.println("Enter your answer: ");
+            BufferedReader stdin = new BufferedReader(new InputStreamReader(System.in));
+            Response response = null;
+            try {
+                String answer = stdin.readLine();
+                Request request = Request.newBuilder()
+                        .setOperationType(Request.OperationType.ANSWER)
+                        .setAnswer(answer)
+                        .build();
+                request.writeDelimitedTo(out);
+                response = Response.parseDelimitedFrom(in);
+
+
+            } catch (IOException e) {
+                e.printStackTrace();
+                System.out.println("YOU DID A BAD");
+            }
+
+            if (response.getResponseType() == Response.ResponseType.TASK) {
+                System.out.println(response.getImage());
+                System.out.println();
+                System.out.println(response.getTask());
+            }
+
+        }
+    }
+
     public static void main (String args[]) throws Exception {
         Socket serverSock = null;
         OutputStream out = null;
@@ -129,6 +160,7 @@ class SockBaseClient {
                             System.out.println(response.getImage());
                             System.out.println();
                             System.out.println(response.getTask());
+                            gameLoop(out, in);
 
                         }
 
@@ -156,9 +188,6 @@ class SockBaseClient {
                 }
 
             } while (true);
-
-
-
 
 
         } catch (Exception e) {

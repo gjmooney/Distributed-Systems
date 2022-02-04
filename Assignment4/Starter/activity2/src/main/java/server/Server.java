@@ -67,6 +67,26 @@ class Server {
         return response;
     }
 
+    public Response evalResponse(String answer) {
+        boolean eval = game.getCorrectAnswer().equals(answer);
+        String message;
+        if (eval) {
+            message = "GOOD JOB";
+            game.replaceOneCharacter();
+        } else {
+            message = "OOOOO NAWP";
+        }
+
+        Response response = Response.newBuilder()
+                .setResponseType(Response.ResponseType.TASK)
+                .setImage(game.getImage())
+                .setTask(game.chooseTask())
+                .setEval(eval)
+                .setMessage(message)
+                .build();
+        return response;
+    }
+
     public Response quitResponse() {
         Response response = Response.newBuilder()
                 .setResponseType(Response.ResponseType.BYE)
@@ -119,6 +139,10 @@ class Server {
 
                 if (request.getOperationType() == Request.OperationType.NEW) {
                     response = startGameResponse();
+                }
+
+                if (request.getOperationType() == Request.OperationType.ANSWER) {
+                    response = evalResponse(request.getAnswer());
                 }
 
                 if (request.getOperationType() == Request.OperationType.QUIT) {
