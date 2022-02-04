@@ -35,6 +35,37 @@ class Server {
         }
     }
 
+    public Response leaderBoardResponse() {
+        Response.Builder res = Response.newBuilder()
+                .setResponseType(Response.ResponseType.LEADER);
+        //look at the entry stuff below once there is a
+        //leaderboard
+        JSONObject lb = game.getLeaderboard();
+        Iterator<String> players = lb.keys();
+
+        while (players.hasNext()) {
+            String key = players.next();
+            //if (lb.get(key) instanceof int) {
+            Entry entry = Entry.newBuilder()
+                    .setName(key)
+                    .setWins((int) lb.get(key))
+                    .build();
+            res.addLeader(entry);
+
+            // }
+        }
+        return res.build();
+    }
+
+    public Response quitResponse() {
+        Response response = Response.newBuilder()
+                .setResponseType(Response.ResponseType.BYE)
+                .setMessage("BUH BYEEEE!! Thanks for playing!")
+                .build();
+
+        return response;
+    }
+
     // Handles the communication right now it just accepts one input and then is done you should make sure the server stays open
     // can handle multiple requests and does not crash when the server crashes
     // you can use this server as based or start a new one if you prefer. 
@@ -70,30 +101,18 @@ class Server {
                 // right now the client has their menu and were waiting on their
                 // new request
                 Request request = Request.parseDelimitedFrom(in);
-                String result = null;
+                Response response = null;
 
                 if (request.getOperationType() == Request.OperationType.LEADER) {
-                    Response.Builder res = Response.newBuilder()
-                            .setResponseType(Response.ResponseType.LEADER);
-                            //look at the entry stuff below once there is a
-                            //leaderboard
-                    JSONObject lb = game.getLeaderboard();
-                    Iterator<String> players = lb.keys();
-
-                    while (players.hasNext()) {
-                        String key = players.next();
-                        //if (lb.get(key) instanceof int) {
-                            Entry entry = Entry.newBuilder()
-                                    .setName(key)
-                                    .setWins((int) lb.get(key))
-                                    .build();
-                            res.addLeader(entry);
-
-                       // }
-                    }
-                    Response response = res.build();
-                    response.writeDelimitedTo(out);
+                    response = leaderBoardResponse();
                 }
+
+                if (request.getOperationType() == Request.OperationType.QUIT) {
+                    response = quitResponse();
+                }
+
+                response.writeDelimitedTo(out);
+
 
             }
 

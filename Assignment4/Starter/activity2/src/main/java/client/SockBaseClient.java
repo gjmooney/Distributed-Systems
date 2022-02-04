@@ -21,6 +21,13 @@ class SockBaseClient {
         return request;
     }
 
+    public static Request quitRequest() {
+        Request request = Request.newBuilder()
+                .setOperationType(Request.OperationType.QUIT)
+                .build();
+        return request;
+    }
+
     public static void main (String args[]) throws Exception {
         Socket serverSock = null;
         OutputStream out = null;
@@ -93,7 +100,7 @@ class SockBaseClient {
                             // build start game request
                             break;
                         case (3):
-                            // build quit respons
+                            request = quitRequest();
                             break;
                         default:
                             System.out.println("Please select a valid option (1, 2, or 3");
@@ -109,6 +116,14 @@ class SockBaseClient {
                             for (Entry player : response.getLeaderList()) {
                                 System.out.println(player.getName() + ": " + player.getWins());
                             }
+                        }
+
+                        if (response.getResponseType() == Response.ResponseType.BYE) {
+                            System.out.println(response.getMessage());
+                            serverSock.close();
+                            out.close();
+                            in.close();
+                            System.exit(0);
                         }
 
                         //receive response from server

@@ -47,7 +47,7 @@ public class Game {
 
     public JSONObject tempMakeLeaderBoard() {
         JSONObject leaderboard = new JSONObject();
-        
+
 
         leaderboard.put("bob", 100);
         leaderboard.put("chris", 50);
