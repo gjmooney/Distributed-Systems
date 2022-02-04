@@ -11,6 +11,23 @@ dependencies {
 //define main class
 mainClassName = 'Concentration'
 
+    def host = 'localhost'
+    def port = 8000
+    def threads = 5
+
+task arguments {
+    if (project.hasProperty("host")) {
+      host = project.getProperty("host")
+    }
+    if (project.hasProperty("port")) {
+      port = project.getProperty("port")
+    }
+    if (project.hasProperty("threads")) {
+      threads = project.getProperty("threads")
+    }
+}
+
+// run with arguments e.g.: gradle runServer -Pport=9099 -q --console=plain
 task runTask1(type: JavaExec) {
   group 'server'
   description 'Creates Server socket waits for messages'
@@ -20,12 +37,11 @@ task runTask1(type: JavaExec) {
   main = 'taskone.Server'
   standardInput = System.in
   
-  // run with arguments e.g.: gradle runServer -Pport=9099 -q --console=plain
-  if (project.hasProperty('port')) {
-    args(project.getProperty('port'));
-  }
+  args port  
+  
 }
 
+// run with arguments e.g.: gradle runServer -Pport=9099 -q --console=plain
 task runTask2(type: JavaExec) {
   group 'server'
   description 'Creates Server socket waits for messages'
@@ -35,12 +51,26 @@ task runTask2(type: JavaExec) {
   main = 'taskone.ThreadedServer'
   standardInput = System.in
   
-  // run with arguments e.g.: gradle runServer -Pport=9099 -q --console=plain
-  if (project.hasProperty('port')) {
-    args(project.getProperty('port'));
-  }
+  
+  args port
 }
 
+// run with arguments e.g.: gradle runServer -Pport=9099 -Pthreads=5 -q --console=plain
+task runTask3(type: JavaExec) {
+  group 'server'
+  description 'Creates Server socket waits for messages'
+
+  classpath = sourceSets.main.runtimeClasspath
+
+  main = 'taskone.ThreadPoolServer'
+  standardInput = System.in
+  
+  
+  args port
+  args threads
+}
+
+// run with arguments e.g.: gradle runClient -Phost=localhost -Pport=9099 -q --console=plain
 task runClient(type: JavaExec) {
   group 'client'
   description 'Creates client socket sends a message to the server'
@@ -51,9 +81,8 @@ task runClient(type: JavaExec) {
   main = 'taskone.Client'
   standardInput = System.in
   
-  // run with arguments e.g.: gradle runClient -Phost=localhost -Pport=9099 -q --console=plain
-  if (project.hasProperty("host") && project.hasProperty('port')) {
-    args(project.getProperty('host'), project.getProperty('port'));
-  }
+  
+  args host
+  args port
 }
 
