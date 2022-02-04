@@ -21,7 +21,7 @@ import org.json.JSONObject;
  * Class: Performer 
  * Description: Threaded Performer for server tasks.
  */
-class Performer {
+class Performer extends Thread {
 
     private StringList state;
     private Socket conn;
@@ -29,6 +29,7 @@ class Performer {
     public Performer(Socket sock, StringList strings) {
         this.conn = sock;
         this.state = strings;
+
     }
 
     public JSONObject add(String str) {
@@ -93,7 +94,7 @@ class Performer {
         try {
             out = conn.getOutputStream();
             in = conn.getInputStream();
-            System.out.println("Server connected to client:");
+            System.out.println("Threaded Performer connected to client:");
             while (!quit) {
                 byte[] messageBytes = NetworkUtils.receive(in);
                 JSONObject message = JsonUtils.fromByteArray(messageBytes);
@@ -138,5 +139,10 @@ class Performer {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    @Override
+    public void run() {
+        doPerform();
     }
 }

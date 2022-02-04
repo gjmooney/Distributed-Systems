@@ -130,7 +130,7 @@ public class Client {
     public static void main(String[] args) throws IOException {
         String host;
         int port;
-        Socket sock;
+        Socket sock = null;
         stdin = new BufferedReader(new InputStreamReader(System.in));
         try {
             if (args.length != 2) {

@@ -7,18 +7,18 @@ class StringList {
     
     List<String> strings = new ArrayList<String>();
 
-    public void add(String str) {
+    synchronized public void add(String str) {
         int pos = strings.indexOf(str);
         if (pos < 0) {
             strings.add(str);
         }
     }
 
-    public boolean contains(String str) {
+    synchronized public boolean contains(String str) {
         return strings.indexOf(str) >= 0;
     }
 
-    public String pop() {
+    synchronized public String pop() {
         if (strings.isEmpty()) {
             return "null";
         } else {
@@ -26,7 +26,7 @@ class StringList {
         }
     }
 
-    public String switchString(String dataString) {
+    synchronized public String switchString(String dataString) {
         String[] indices = dataString.split(" ");
         int first = Integer.parseInt(indices[0]);
         int second = Integer.parseInt(indices[1]);
@@ -44,11 +44,11 @@ class StringList {
 
     }
 
-    public int size() {
+    synchronized public int size() {
         return strings.size();
     }
 
-    public String toString() {
+    synchronized public String toString() {
         return strings.toString();
     }
 }
