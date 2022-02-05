@@ -101,7 +101,7 @@ class SockBaseClient {
     }
 
     public static void main (String args[]) throws Exception {
-        Socket serverSock = null;
+        Socket socket = null;
         OutputStream out = null;
         InputStream in = null;
         int i1=0, i2=0;
@@ -133,11 +133,11 @@ class SockBaseClient {
 
         try {
             // connect to the server
-            serverSock = new Socket(host, port);
+            socket = new Socket(host, port);
 
             // write to the server
-            out = serverSock.getOutputStream();
-            in = serverSock.getInputStream();
+            out = socket.getOutputStream();
+            in = socket.getInputStream();
 
             // send name to server
             nameRequest.writeDelimitedTo(out);
@@ -194,13 +194,13 @@ class SockBaseClient {
                             System.out.println(response.getImage());
                             System.out.println();
                             System.out.println(response.getTask());
-                            gameLoop(serverSock, out, in);
+                            gameLoop(socket, out, in);
 
                         }
 
                         if (response.getResponseType() == Response.ResponseType.BYE) {
                             System.out.println(response.getMessage());
-                            exit(serverSock, out, in);
+                            exit(socket, out, in);
                         }
                     }
                 } catch (Exception e) {
@@ -214,7 +214,7 @@ class SockBaseClient {
         } finally {
             if (in != null)   in.close();
             if (out != null)  out.close();
-            if (serverSock != null) serverSock.close();
+            if (socket != null) socket.close();
         }
     }
 }

@@ -27,7 +27,7 @@ public class Game {
     private String correctAnswer;
 
 
-    public Game(){
+     public Game(){
         // you can of course add more or change this setup completely.
         // You are totally free to also use just Strings in your Server class
         // instead of this class
@@ -62,7 +62,7 @@ public class Game {
         won = true;
     }
 
-    public JSONObject getLeaderboard() {
+    synchronized public JSONObject getLeaderboard() {
         return leaderboard;
     }
 
@@ -70,7 +70,7 @@ public class Game {
      * Method loads in a new image from the specified files and creates the hidden image for it. 
      * @return Nothing.
      */
-    public void newGame(){
+    synchronized public void newGame(){
         if (won) {
             idx = 0;
             won = false; 
@@ -128,7 +128,7 @@ public class Game {
      * Method returns the String of the current hidden image
      * @return String of the current hidden image
      */
-    public String getImage(){
+    synchronized public String getImage(){
         StringBuilder sb = new StringBuilder();
         for (char[] subArray : hidden) {
             sb.append(subArray);
@@ -137,7 +137,7 @@ public class Game {
         return sb.toString();
     }
 
-    public String getOriginalImage(){
+    synchronized public String getOriginalImage(){
         StringBuilder sb = new StringBuilder();
         for (char[] subArray : original) {
             sb.append(subArray);
@@ -151,7 +151,7 @@ public class Game {
      * You can change this method if you want to turn more than one x to the original
      * @return String of the current hidden image
      */
-    public String replaceOneCharacter() {
+    synchronized public String replaceOneCharacter() {
         int colNumber = idx%col;
         int rowNumber = idx/col;
         hidden[rowNumber][colNumber] = original[rowNumber][colNumber];
@@ -159,7 +159,7 @@ public class Game {
         return(getImage());
     }
 
-    public String replaceHalfCharacter() {
+    synchronized public String replaceHalfCharacter() {
 
         for (int i = 0; i < col/2; i++) {
             int colNumber = idx%col;
@@ -171,7 +171,7 @@ public class Game {
         return(getImage());
     }
 
-    public String chooseTask() {
+    synchronized public String chooseTask() {
         Random rand = new Random();
         int task = rand.nextInt(2);
         String taskText;
@@ -193,27 +193,27 @@ public class Game {
         return taskText;
     }
 
-    public int getIdxMax() {
+    synchronized public int getIdxMax() {
         return idxMax;
     }
 
-    public void setIdxMax(int idxMax) {
+    synchronized public void setIdxMax(int idxMax) {
         this.idxMax = idxMax;
     }
 
-    public int getIdx() {
+    synchronized public int getIdx() {
         return idx;
     }
 
-    public void setIdx(int idx) {
+    synchronized public void setIdx(int idx) {
         this.idx = idx;
     }
 
-    public String getCorrectAnswer() {
+    synchronized public String getCorrectAnswer() {
         return correctAnswer;
     }
 
-    public void setCorrectAnswer(String correctAnswer) {
+    synchronized public void setCorrectAnswer(String correctAnswer) {
         this.correctAnswer = correctAnswer;
     }
 }
