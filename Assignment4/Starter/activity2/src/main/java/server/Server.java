@@ -76,7 +76,7 @@ class Server extends Thread{
 
         if (eval) {
             message = "GOOD JOB";
-            game.replaceHalfCharacter();
+            replace(50);
         } else {
             message = "OOOOO NAWP";
         }
@@ -88,6 +88,7 @@ class Server extends Thread{
                     .setImage(game.getImage())
                     .setMessage("YOU WON BRO\nLETS PLAY AGAIN!!!!!!!")
                     .build();
+            game.setWon();
         } else {
             response = Response.newBuilder()
                     .setResponseType(Response.ResponseType.TASK)
