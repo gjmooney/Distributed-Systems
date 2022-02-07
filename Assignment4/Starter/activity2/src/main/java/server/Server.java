@@ -57,18 +57,18 @@ class Server extends Thread{
         return res.build();
     }
 
-    public Response startGameResponse() {
+    public Response startGameResponse(String name) {
         game.newGame();
         Response response = Response.newBuilder()
                 .setResponseType(Response.ResponseType.TASK)
                 .setImage(game.getImage())
-                .setTask(game.chooseTask())
+                .setTask(game.chooseTask(name))
                 .build();
         return response;
     }
 
     public Response evalResponse(String answer, String name) {
-        boolean eval = game.getCorrectAnswer().equals(answer);
+        boolean eval = game.getPlayersTaskAnswer(name).equals(answer);
         String message;
         Response response;
 
@@ -95,7 +95,7 @@ class Server extends Thread{
             response = Response.newBuilder()
                     .setResponseType(Response.ResponseType.TASK)
                     .setImage(game.getImage())
-                    .setTask(game.chooseTask())
+                    .setTask(game.chooseTask(name))
                     .setEval(eval)
                     .setMessage(message)
                     .build();
@@ -160,7 +160,7 @@ class Server extends Thread{
                 }
 
                 if (request.getOperationType() == Request.OperationType.NEW) {
-                    response = startGameResponse();
+                    response = startGameResponse(name);
                 }
 
                 if (request.getOperationType() == Request.OperationType.ANSWER) {

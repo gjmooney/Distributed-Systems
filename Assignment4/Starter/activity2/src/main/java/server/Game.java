@@ -73,6 +73,7 @@ public class Game {
             JSONObject stats = new JSONObject();
             stats.put("wins", 0);
             stats.put("logins", 1);
+            stats.put("taskAnswer", "");
             playerInfo.put(name, stats);
         } else {
             JSONObject temp = (JSONObject) playerInfo.get(name);
@@ -115,7 +116,12 @@ public class Game {
     public JSONObject getPlayerInfo() {
         return playerInfo;
     }
-    
+
+    public String getPlayersTaskAnswer(String name) {
+         JSONObject temp = (JSONObject) playerInfo.get(name);
+         return (String) temp.get("taskAnswer");
+    }
+
     /**
      * Sets the won flag to true
      * @param args Unused.
@@ -218,19 +224,7 @@ public class Game {
         return(getImage());
     }
 
-    synchronized public String replaceHalfCharacter() {
-
-        for (int i = 0; i < col/2; i++) {
-            int colNumber = idx%col;
-            int rowNumber = idx/col;
-            hidden[rowNumber][colNumber] = original[rowNumber][colNumber];
-            idx++;
-        }
-
-        return(getImage());
-    }
-
-    synchronized public String chooseTask() {
+    synchronized public String chooseTask(String name) {
         Random rand = new Random();
         int task = rand.nextInt(2);
         String taskText;
@@ -238,15 +232,15 @@ public class Game {
         switch (task) {
             case (0):
                 taskText = "Enter e";
-                setCorrectAnswer("e");
+                setCorrectAnswer(name, "e");
                 break;
             case (1):
                 taskText = "Whats 2 * 3 ?";
-                setCorrectAnswer(String.valueOf(6));
+                setCorrectAnswer(name, String.valueOf(6));
                 break;
             default:
                 taskText = "we broke";
-                setCorrectAnswer("yerp");
+                setCorrectAnswer(name, "yerp");
                 break;
         }
         return taskText;
@@ -272,7 +266,13 @@ public class Game {
         return correctAnswer;
     }
 
-    synchronized public void setCorrectAnswer(String correctAnswer) {
-        this.correctAnswer = correctAnswer;
+    synchronized public void setCorrectAnswer(String name, String correctAnswer) {
+        if (playerInfo.has(name)) {
+            JSONObject temp = (JSONObject) playerInfo.get(name);
+            temp.put("taskAnswer", correctAnswer);
+        } else  {
+            System.out.println("Player " + name + " not on list");
+        }
+        //this.correctAnswer = correctAnswer;
     }
 }
