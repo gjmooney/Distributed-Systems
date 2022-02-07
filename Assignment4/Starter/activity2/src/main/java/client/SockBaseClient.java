@@ -60,46 +60,68 @@ class SockBaseClient {
 
     public static void gameLoop(Socket serverSock, OutputStream out, InputStream in) {
         boolean gameOn = true;
+        MessageHandler handler = new MessageHandler(in);
+        handler.start();
 
         while (gameOn) {
             System.out.println("\nEnter your answer: ");
             BufferedReader stdin = new BufferedReader(new InputStreamReader(System.in));
             Request request;
             Response response = null;
-            try {
-                String answer = stdin.readLine();
-                if (answer.toLowerCase(Locale.ROOT).equals("exit")) {
-                    request = quitRequest();
-                } else {
-                    request = gameLoopRequest(answer);
-                }
+            String answer = "";
+            boolean gotResponse = false;
 
-                request.writeDelimitedTo(out);
-                response = Response.parseDelimitedFrom(in);
-
-                if (response.getResponseType() == Response.ResponseType.TASK) {
-                    System.out.println(response.getMessage());
-                    System.out.println();
-                    System.out.println(response.getImage());
-                    System.out.println();
-                    System.out.println("----YOUR TASK----");
-                    System.out.println(response.getTask());
-                } else if(response.getResponseType() == Response.ResponseType.WON) {
-                    System.out.println();
-                    System.out.println(response.getImage());
-                    System.out.println("----CONGRATULATIONS! YOU HAVE SUCCEEDED!----");
-                    System.out.println(response.getMessage());
-                    gameOn = false;
-                } else if (response.getResponseType() == Response.ResponseType.BYE) {
-                    System.out.println(response.getImage());
-                    System.out.println("----FAREWELL, MY FRIEND----");
-                    System.out.println(response.getMessage());
-                    exit(serverSock, out, in);
+            while (!gotResponse) {
+                try {
+                    //System.out.println("1");
+                    if (stdin.ready()) {
+                        System.out.println("2");
+                        answer = stdin.readLine();
+                        System.out.println("3");
+                        if (answer.toLowerCase(Locale.ROOT).equals("exit")) {
+                            System.out.println("4");
+                            request = quitRequest();
+                            System.out.println("5");
+                        } else {
+                            System.out.println("6");
+                            request = gameLoopRequest(answer);
+                            System.out.println("7");
+                        }
+                        System.out.println("8");
+                        request.writeDelimitedTo(out);
+                        System.out.println("9");
+                    }
+                    //System.out.println("10");
+                    response = handler.getResponse();
+                    if (response != null) {
+                        gotResponse = true;
+                        if (response.getResponseType() == Response.ResponseType.TASK) {
+                            System.out.println(response.getMessage());
+                            System.out.println();
+                            System.out.println(response.getImage());
+                            System.out.println();
+                            System.out.println("----YOUR TASK----");
+                            System.out.println(response.getTask());
+                        } else if(response.getResponseType() == Response.ResponseType.WON) {
+                            System.out.println();
+                            System.out.println(response.getImage());
+                            System.out.println("----CONGRATULATIONS! YOU HAVE SUCCEEDED!----");
+                            System.out.println(response.getMessage());
+                            gameOn = false;
+                        } else if (response.getResponseType() == Response.ResponseType.BYE) {
+                            System.out.println(response.getImage());
+                            System.out.println("----FAREWELL, MY FRIEND----");
+                            System.out.println(response.getMessage());
+                            exit(serverSock, out, in);
+                        }
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    System.out.println("YOU DID A BAD");
                 }
-            } catch (IOException e) {
-                e.printStackTrace();
-                System.out.println("YOU DID A BAD");
             }
+
+
         }
     }
 
