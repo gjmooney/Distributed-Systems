@@ -201,6 +201,7 @@ class SockBaseClient {
                         if (response.getResponseType() == Response.ResponseType.TASK) {
                             System.out.println(response.getImage());
                             System.out.println();
+                            System.out.println("----YOUR TASK----");
                             System.out.println(response.getTask());
                             gameLoop(socket, out, in);
 

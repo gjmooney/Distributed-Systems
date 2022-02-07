@@ -74,7 +74,7 @@ class Server extends Thread{
 
         if (eval) {
             message = "GOOD JOB";
-            replace(50);
+            game.replaceNumCharacters(50);
         } else {
             message = "OOOOO NAWP";
         }
@@ -138,13 +138,15 @@ class Server extends Thread{
                 System.out.println("Got a connection and a name: " + name);
 
                 //leaderboard stuff
-                game.addClientToPlayerInfo(name);
+
 
                 Response response = Response.newBuilder()
                         .setResponseType(Response.ResponseType.GREETING)
                         .setMessage("Hello " + name + " and welcome.")
                         .build();
                 response.writeDelimitedTo(out);
+
+                game.addClientToPlayerInfo(name.toLowerCase(Locale.ROOT));
             } else {
                 //TODO something bad appen make an error
             }
@@ -164,7 +166,7 @@ class Server extends Thread{
                 }
 
                 if (request.getOperationType() == Request.OperationType.ANSWER) {
-                    response = evalResponse(request.getAnswer(), name);
+                    response = evalResponse(request.getAnswer().toLowerCase(Locale.ROOT), name);
                 }
 
                 if (request.getOperationType() == Request.OperationType.QUIT) {
@@ -187,18 +189,7 @@ class Server extends Thread{
         }
     }
 
-    /**
-     * Replaces num characters in the image. I used it to turn more than one x when the task is fulfilled
-     * @param num -- number of x to be turned
-     * @return String of the new hidden image
-     */
-    public String replace(int num){
-        for (int i = 0; i < num; i++){
-            if (game.getIdx()< game.getIdxMax())
-                game.replaceOneCharacter();
-        }
-        return game.getImage();
-    }
+
 
 
     /**

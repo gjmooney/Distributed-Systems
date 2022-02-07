@@ -74,6 +74,7 @@ public class Game {
             stats.put("wins", 0);
             stats.put("logins", 1);
             stats.put("taskAnswer", "");
+            stats.put("tilesToFlip" , 1);
             playerInfo.put(name, stats);
         } else {
             JSONObject temp = (JSONObject) playerInfo.get(name);
@@ -124,7 +125,6 @@ public class Game {
 
     /**
      * Sets the won flag to true
-     * @param args Unused.
      * @return Nothing.
      */
     synchronized public void setWon(){
@@ -224,9 +224,22 @@ public class Game {
         return(getImage());
     }
 
+    /**
+     * Replaces num characters in the image. I used it to turn more than one x when the task is fulfilled
+     * @param num -- number of x to be turned
+     * @return String of the new hidden image
+     */
+    public String replaceNumCharacters(int num){
+        for (int i = 0; i < num; i++){
+            if (getIdx()< getIdxMax())
+                replaceOneCharacter();
+        }
+        return getImage();
+    }
+
     synchronized public String chooseTask(String name) {
         Random rand = new Random();
-        int task = rand.nextInt(2);
+        int task = rand.nextInt(4);
         String taskText;
 
         switch (task) {
@@ -235,8 +248,16 @@ public class Game {
                 setCorrectAnswer(name, "e");
                 break;
             case (1):
-                taskText = "Whats 2 * 3 ?";
+                taskText = "What's 2 * 3 ?";
                 setCorrectAnswer(name, String.valueOf(6));
+                break;
+            case (2):
+                taskText = "What's the missing vowel? \nB*n*n*";
+                setCorrectAnswer(name, "a");
+                break;
+            case(3):
+                taskText = "What is the capital of Germany?";
+                setCorrectAnswer(name, "berlin");
                 break;
             default:
                 taskText = "we broke";
