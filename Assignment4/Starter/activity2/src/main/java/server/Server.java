@@ -59,6 +59,7 @@ class Server extends Thread{
 
     public Response startGameResponse(String name) {
         game.newGame();
+        game.setNumberOfTilesToFlip(name);
         Response response = Response.newBuilder()
                 .setResponseType(Response.ResponseType.TASK)
                 .setImage(game.getImage())
@@ -74,7 +75,7 @@ class Server extends Thread{
 
         if (eval) {
             message = "GOOD JOB";
-            game.replaceNumCharacters(50);
+            game.replaceNumCharacters(game.getNumberOfTilesToFlip(name));
         } else {
             message = "OOOOO NAWP";
         }

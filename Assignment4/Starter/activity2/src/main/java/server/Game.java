@@ -237,6 +237,30 @@ public class Game {
         return getImage();
     }
 
+    public void setNumberOfTilesToFlip(String name) {
+        if (playerInfo.has(name)) {
+            JSONObject temp = (JSONObject) playerInfo.get(name);
+            int minimum = idxMax / 8;
+            int numToFlip;
+            // makes the game easier for new players
+            if ((int) temp.get("tilesToFlip") == 1) {
+                numToFlip = minimum;
+            } else {
+                numToFlip = minimum + ((int) temp.get("logins") - (int) temp.get("wins"));
+            }
+            temp.put("tilesToFlip", numToFlip);
+        }
+    }
+
+    public int getNumberOfTilesToFlip(String name) {
+        if (playerInfo.has(name)) {
+            JSONObject temp = (JSONObject) playerInfo.get(name);
+            return (int) temp.get("tilesToFlip");
+        } else {
+            return idxMax / 8;
+        }
+    }
+
     synchronized public String chooseTask(String name) {
         Random rand = new Random();
         int task = rand.nextInt(4);
