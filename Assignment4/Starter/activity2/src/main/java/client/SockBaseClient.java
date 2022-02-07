@@ -106,6 +106,7 @@ class SockBaseClient {
         InputStream in = null;
         int i1=0, i2=0;
         int port = 9099; // default port
+        ArrayList<Player> leaderboardList = new ArrayList<>();
 
         // Make sure two arguments are given
         if (args.length != 2) {
@@ -185,8 +186,15 @@ class SockBaseClient {
                         response = Response.parseDelimitedFrom(in);
 
                         if (response.getResponseType() == Response.ResponseType.LEADER) {
+                            leaderboardList.clear();
                             for (Entry player : response.getLeaderList()) {
-                                System.out.println(player.getName() + ": " + player.getWins());
+                                leaderboardList.add(new Player(player.getName(), player.getWins()));
+                            }
+                            Collections.sort(leaderboardList);
+                            System.out.println("----LEADERBOARD----");
+                            for (Player player: leaderboardList) {
+                                System.out.println(player.toString());
+
                             }
                         }
 

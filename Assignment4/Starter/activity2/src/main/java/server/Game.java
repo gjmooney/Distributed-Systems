@@ -24,8 +24,7 @@ public class Game {
     private int row; // rows in original and hidden
     private boolean won; // if the game is won or not
     private List<String> files = new ArrayList<String>(); // list of files, each file has one image
-    //JSONObject leaderboard;
-    HashMap<String, JSONObject> playerInfo;
+    JSONObject playerInfo;
 
     private String correctAnswer;
 
@@ -43,30 +42,20 @@ public class Game {
         files.add("joke1.txt");
         files.add("joke2.txt");
         files.add("joke3.txt");
-        playerInfo = new HashMap<>();
-        //leaderboard = tempMakeLeaderBoard();
+        playerInfo = readLeaderboard();
     }
 
-    public JSONObject tempMakeLeaderBoard() {
-        JSONObject leaderboard = new JSONObject();
-
-
-        leaderboard.put("bob", 100);
-        leaderboard.put("chris", 50);
-
-
-        return leaderboard;
-    }
-
-    synchronized public void readLeaderboard() {
+    synchronized public JSONObject readLeaderboard() {
          BufferedReader leaderboardReader = null;
-
+         JSONTokener tokener;
          try {
              File file = new File("src/main/resources/leaderboard.txt");
              leaderboardReader = new BufferedReader(new FileReader(file));
-             JSONTokener tokener = new JSONTokener(leaderboardReader);
+             tokener = new JSONTokener(leaderboardReader);
+             return new JSONObject(tokener);
          } catch (FileNotFoundException e) {
              System.out.println("No leaderboard yet");
+             return new JSONObject();
          } finally {
              if (leaderboardReader != null) {
                  try {
@@ -80,20 +69,21 @@ public class Game {
     }
 
     synchronized public void addClientToPlayerInfo(String name) {
-        if(!playerInfo.containsKey(name)) {
+        if(!playerInfo.has(name)) {
             JSONObject stats = new JSONObject();
             stats.put("wins", 0);
             stats.put("logins", 1);
             playerInfo.put(name, stats);
         } else {
-            JSONObject temp = playerInfo.get(name);
+            JSONObject temp = (JSONObject) playerInfo.get(name);
             temp.put("logins", (int) temp.get("logins") + 1);
         }
+        System.out.println(playerInfo);
     }
 
     synchronized public void updatePlayerInfo(String name) {
-         if (playerInfo.containsKey(name)) {
-             JSONObject temp = playerInfo.get(name);
+         if (playerInfo.has(name)) {
+             JSONObject temp = (JSONObject) playerInfo.get(name);
              temp.put("wins", (int) temp.get("wins") + 1);
          } else {
              System.out.println("update leaderboard issue");
@@ -104,7 +94,7 @@ public class Game {
         FileWriter file = null;
          try {
              file = new FileWriter("src/main/resources/leaderboard.txt");
-             file.write(getJSONLeaderboard().toString());
+             file.write(playerInfo.toString());
          } catch (IOException e) {
              e.printStackTrace();
              System.out.println("Problem saving leaderboard");
@@ -122,14 +112,10 @@ public class Game {
 
     }
 
-    public JSONObject getJSONLeaderboard() {
-        JSONObject jsonLeaderboard = new JSONObject();
-
-        for (String key : playerInfo.keySet()) {
-            jsonLeaderboard.put(key, playerInfo.get(key));
-        }
-        return jsonLeaderboard;
+    public JSONObject getPlayerInfo() {
+        return playerInfo;
     }
+    
     /**
      * Sets the won flag to true
      * @param args Unused.

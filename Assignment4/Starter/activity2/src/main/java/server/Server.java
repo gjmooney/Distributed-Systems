@@ -40,8 +40,7 @@ class Server extends Thread{
         Response.Builder res = Response.newBuilder()
                 .setResponseType(Response.ResponseType.LEADER);
 
-        // convert hashmap to jsonobject
-        JSONObject lb = game.getJSONLeaderboard();
+        JSONObject lb = game.getPlayerInfo();
         Iterator<String> players = lb.keys();
 
         while (players.hasNext()) {
@@ -49,14 +48,11 @@ class Server extends Thread{
             JSONObject stat = (JSONObject) lb.get(key);
             int wins = (int) stat.get("wins");
             int logins = (int) stat.get("logins");
-            //if (lb.get(key) instanceof int) {
             Entry entry = Entry.newBuilder()
                     .setName(key)
                     .setWins(wins)
                     .build();
             res.addLeader(entry);
-
-            // }
         }
         return res.build();
     }
