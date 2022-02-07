@@ -10,7 +10,6 @@ import buffers.RequestProtos.Logs;
 import buffers.RequestProtos.Message;
 import buffers.ResponseProtos.Response;
 import buffers.ResponseProtos.Entry;
-import client.Player;
 import org.json.JSONObject;
 
 class Server extends Thread{
@@ -23,7 +22,7 @@ class Server extends Thread{
     int port = 9099; // default port
     Game game;
     static LinkedList<Server> connectedClients;
-    
+
 
 
     public Server(Socket sock, Game game){
@@ -40,17 +39,20 @@ class Server extends Thread{
     public Response leaderBoardResponse() {
         Response.Builder res = Response.newBuilder()
                 .setResponseType(Response.ResponseType.LEADER);
-        //look at the entry stuff below once there is a
-        //leaderboard
-        JSONObject lb = game.getLeaderboard();
+
+        // convert hashmap to jsonobject
+        JSONObject lb = game.getJSONLeaderboard();
         Iterator<String> players = lb.keys();
 
         while (players.hasNext()) {
             String key = players.next();
+            JSONObject stat = (JSONObject) lb.get(key);
+            int wins = (int) stat.get("wins");
+            int logins = (int) stat.get("logins");
             //if (lb.get(key) instanceof int) {
             Entry entry = Entry.newBuilder()
                     .setName(key)
-                    .setWins((int) lb.get(key))
+                    .setWins(wins)
                     .build();
             res.addLeader(entry);
 
@@ -69,7 +71,7 @@ class Server extends Thread{
         return response;
     }
 
-    public Response evalResponse(String answer) {
+    public Response evalResponse(String answer, String name) {
         boolean eval = game.getCorrectAnswer().equals(answer);
         String message;
         Response response;
@@ -89,6 +91,10 @@ class Server extends Thread{
                     .setMessage("YOU WON BRO\nLETS PLAY AGAIN!!!!!!!")
                     .build();
             game.setWon();
+
+            game.updatePlayerInfo(name);
+            game.saveLeaderboard();
+
         } else {
             response = Response.newBuilder()
                     .setResponseType(Response.ResponseType.TASK)
@@ -134,6 +140,10 @@ class Server extends Thread{
                 // writing a connect message to the log with name and CONNENCT
                 writeToLog(name, Message.CONNECT);
                 System.out.println("Got a connection and a name: " + name);
+
+                //leaderboard stuff
+                game.addClientToPlayerInfo(name);
+
                 Response response = Response.newBuilder()
                         .setResponseType(Response.ResponseType.GREETING)
                         .setMessage("Hello " + name + " and welcome.")
@@ -158,7 +168,7 @@ class Server extends Thread{
                 }
 
                 if (request.getOperationType() == Request.OperationType.ANSWER) {
-                    response = evalResponse(request.getAnswer());
+                    response = evalResponse(request.getAnswer(), name);
                 }
 
                 if (request.getOperationType() == Request.OperationType.QUIT) {
@@ -252,6 +262,7 @@ class Server extends Thread{
     public static void main (String args[]) throws Exception {
         Game game = new Game();
         connectedClients = new LinkedList<>();
+        //players = new HashSet<>();
         int id = 0;
         Socket clientSocket = null;
 

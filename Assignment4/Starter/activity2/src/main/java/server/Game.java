@@ -1,5 +1,6 @@
 package server;
 import org.json.JSONObject;
+import org.json.JSONTokener;
 
 import java.util.*;
 import java.io.*;
@@ -23,7 +24,9 @@ public class Game {
     private int row; // rows in original and hidden
     private boolean won; // if the game is won or not
     private List<String> files = new ArrayList<String>(); // list of files, each file has one image
-    JSONObject leaderboard;
+    //JSONObject leaderboard;
+    HashMap<String, JSONObject> playerInfo;
+
     private String correctAnswer;
 
 
@@ -40,7 +43,8 @@ public class Game {
         files.add("joke1.txt");
         files.add("joke2.txt");
         files.add("joke3.txt");
-        leaderboard = tempMakeLeaderBoard();
+        playerInfo = new HashMap<>();
+        //leaderboard = tempMakeLeaderBoard();
     }
 
     public JSONObject tempMakeLeaderBoard() {
@@ -53,17 +57,86 @@ public class Game {
 
         return leaderboard;
     }
+
+    synchronized public void readLeaderboard() {
+         BufferedReader leaderboardReader = null;
+
+         try {
+             File file = new File("src/main/resources/leaderboard.txt");
+             leaderboardReader = new BufferedReader(new FileReader(file));
+             JSONTokener tokener = new JSONTokener(leaderboardReader);
+         } catch (FileNotFoundException e) {
+             System.out.println("No leaderboard yet");
+         } finally {
+             if (leaderboardReader != null) {
+                 try {
+                     leaderboardReader.close();
+                 }
+                 catch (Exception e) {
+                     e.printStackTrace();
+                 }
+             }
+         }
+    }
+
+    synchronized public void addClientToPlayerInfo(String name) {
+        if(!playerInfo.containsKey(name)) {
+            JSONObject stats = new JSONObject();
+            stats.put("wins", 0);
+            stats.put("logins", 1);
+            playerInfo.put(name, stats);
+        } else {
+            JSONObject temp = playerInfo.get(name);
+            temp.put("logins", (int) temp.get("logins") + 1);
+        }
+    }
+
+    synchronized public void updatePlayerInfo(String name) {
+         if (playerInfo.containsKey(name)) {
+             JSONObject temp = playerInfo.get(name);
+             temp.put("wins", (int) temp.get("wins") + 1);
+         } else {
+             System.out.println("update leaderboard issue");
+         }
+    }
+
+    synchronized public void saveLeaderboard() {
+        FileWriter file = null;
+         try {
+             file = new FileWriter("src/main/resources/leaderboard.txt");
+             file.write(getJSONLeaderboard().toString());
+         } catch (IOException e) {
+             e.printStackTrace();
+             System.out.println("Problem saving leaderboard");
+         } finally {
+             try {
+                 if (file != null) {
+                     file.flush();
+                     file.close();
+                 }
+             } catch (IOException e) {
+                 e.printStackTrace();
+                 System.out.println("problem closing leaderboard file");
+             }
+         }
+
+    }
+
+    public JSONObject getJSONLeaderboard() {
+        JSONObject jsonLeaderboard = new JSONObject();
+
+        for (String key : playerInfo.keySet()) {
+            jsonLeaderboard.put(key, playerInfo.get(key));
+        }
+        return jsonLeaderboard;
+    }
     /**
      * Sets the won flag to true
      * @param args Unused.
      * @return Nothing.
      */
-    public void setWon(){
+    synchronized public void setWon(){
         won = true;
-    }
-
-    synchronized public JSONObject getLeaderboard() {
-        return leaderboard;
     }
 
     /**
