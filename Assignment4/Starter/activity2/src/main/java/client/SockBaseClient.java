@@ -62,7 +62,7 @@ class SockBaseClient {
         boolean gameOn = true;
 
         while (gameOn) {
-            System.out.println("Enter your answer: ");
+            System.out.println("\nEnter your answer: ");
             BufferedReader stdin = new BufferedReader(new InputStreamReader(System.in));
             Request request;
             Response response = null;
@@ -82,14 +82,17 @@ class SockBaseClient {
                     System.out.println();
                     System.out.println(response.getImage());
                     System.out.println();
-                    System.out.println("Your task: " + response.getTask());
+                    System.out.println("----YOUR TASK----");
+                    System.out.println(response.getTask());
                 } else if(response.getResponseType() == Response.ResponseType.WON) {
                     System.out.println();
                     System.out.println(response.getImage());
+                    System.out.println("----CONGRATULATIONS! YOU HAVE SUCCEEDED!----");
                     System.out.println(response.getMessage());
                     gameOn = false;
                 } else if (response.getResponseType() == Response.ResponseType.BYE) {
                     System.out.println(response.getImage());
+                    System.out.println("----FAREWELL, MY FRIEND----");
                     System.out.println(response.getMessage());
                     exit(serverSock, out, in);
                 }

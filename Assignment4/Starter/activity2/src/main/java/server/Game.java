@@ -263,7 +263,7 @@ public class Game {
 
     synchronized public String chooseTask(String name) {
         Random rand = new Random();
-        int task = rand.nextInt(4);
+        int task = rand.nextInt(7);
         String taskText;
 
         switch (task) {
@@ -279,9 +279,21 @@ public class Game {
                 taskText = "What's the missing vowel? \nB*n*n*";
                 setCorrectAnswer(name, "a");
                 break;
-            case(3):
+            case (3):
                 taskText = "What is the capital of Germany?";
                 setCorrectAnswer(name, "berlin");
+                break;
+            case (4):
+                taskText = "Count the vowels in Strength.\nHow many are there?";
+                setCorrectAnswer(name, String.valueOf(1));
+                break;
+            case (5):
+                taskText = "Type Incomprehensibilities";
+                setCorrectAnswer(name, " Incomprehensibilities");
+                break;
+            case (6):
+                taskText = "Sort the numbers (Only enter numbers)\n 2 45 5 2 8 19 27 6 93 1";
+                setCorrectAnswer(name, "12256819274593");
                 break;
             default:
                 taskText = "we broke";
