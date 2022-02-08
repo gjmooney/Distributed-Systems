@@ -18,9 +18,8 @@ public class MessageHandler extends Thread{
     }
 
     @Override
-    public void run() {
+     public void run() {
         while (keepRunning.get()) {
-            response = null;
             try {
                 System.out.println("handler waiting on response");
                 response = Response.parseDelimitedFrom(in);
@@ -34,6 +33,10 @@ public class MessageHandler extends Thread{
             }
         }
 
+    }
+
+    public void nullOutResponse() {
+        response = null;
     }
 
     public Response getResponse() {

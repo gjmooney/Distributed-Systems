@@ -59,6 +59,7 @@ class SockBaseClient {
     }
 
     public static void gameLoop(Socket serverSock, OutputStream out, InputStream in) {
+        System.out.println("GAME LOOP");
         boolean gameOn = true;
         MessageHandler handler = new MessageHandler(in);
         handler.start();
@@ -72,6 +73,7 @@ class SockBaseClient {
             boolean gotResponse = false;
 
             while (!gotResponse) {
+
                 try {
                     //System.out.println("1");
                     if (stdin.ready()) {
@@ -90,6 +92,11 @@ class SockBaseClient {
                         System.out.println("8");
                         request.writeDelimitedTo(out);
                         System.out.println("9");
+                    }
+                    try {
+                        Thread.sleep(50);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
                     }
                     //System.out.println("10");
                     response = handler.getResponse();
@@ -114,12 +121,21 @@ class SockBaseClient {
                             System.out.println(response.getMessage());
                             exit(serverSock, out, in);
                         }
+                        handler.nullOutResponse();
+                        /*try {
+                            Thread.sleep(500);
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }*/
                     }
                 } catch (IOException e) {
                     e.printStackTrace();
                     System.out.println("YOU DID A BAD");
                 }
+
             }
+
+
 
 
         }

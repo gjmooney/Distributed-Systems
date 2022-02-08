@@ -80,7 +80,6 @@ public class Game {
             JSONObject temp = (JSONObject) playerInfo.get(name);
             temp.put("logins", (int) temp.get("logins") + 1);
         }
-        System.out.println(playerInfo);
     }
 
     synchronized public void updatePlayerInfo(String name) {
@@ -122,6 +121,8 @@ public class Game {
          JSONObject temp = (JSONObject) playerInfo.get(name);
          return (String) temp.get("taskAnswer");
     }
+
+
 
     /**
      * Sets the won flag to true
@@ -289,7 +290,7 @@ public class Game {
                 break;
             case (5):
                 taskText = "Type Incomprehensibilities";
-                setCorrectAnswer(name, " Incomprehensibilities");
+                setCorrectAnswer(name, "incomprehensibilities");
                 break;
             case (6):
                 taskText = "Sort the numbers (Only enter numbers)\n 2 45 5 2 8 19 27 6 93 1";
@@ -324,12 +325,12 @@ public class Game {
     }
 
     synchronized public void setCorrectAnswer(String name, String correctAnswer) {
-        if (playerInfo.has(name)) {
+        /*if (playerInfo.has(name)) {
             JSONObject temp = (JSONObject) playerInfo.get(name);
             temp.put("taskAnswer", correctAnswer);
         } else  {
             System.out.println("Player " + name + " not on list");
-        }
-        //this.correctAnswer = correctAnswer;
+        }*/
+        this.correctAnswer = correctAnswer;
     }
 }

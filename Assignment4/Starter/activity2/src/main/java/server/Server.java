@@ -14,26 +14,33 @@ import org.json.JSONObject;
 
 class Server extends Thread{
     static String logFilename = "logs.txt";
-
+    static Integer index;
+    int id;
     ServerSocket serv = null;
     InputStream in = null;
     OutputStream out = null;
     Socket clientSocket = null;
     int port = 9099; // default port
     Game game;
-    static LinkedList<Server> connectedClients;
+    static ArrayList<Server> connectedClients;
 
 
 
-    public Server(Socket sock, Game game){
+    public Server(Socket sock, Game game, int index){
         this.clientSocket = sock;
         this.game = game;
+        this.id = index;
         try {
             in = clientSocket.getInputStream();
             out = clientSocket.getOutputStream();
         } catch (Exception e){
             System.out.println("Error in Server constructor: " + e);
         }
+    }
+
+    public static void addClient(Server clientConnection) {
+        connectedClients.add(clientConnection);
+        index++;
     }
 
     public Response leaderBoardResponse() {
@@ -69,7 +76,7 @@ class Server extends Thread{
     }
 
     public Response evalResponse(String answer, String name) {
-        boolean eval = game.getPlayersTaskAnswer(name).equals(answer);
+        boolean eval = game.getCorrectAnswer().equals(answer);
         String message;
         Response response;
 
@@ -89,6 +96,7 @@ class Server extends Thread{
                     .build();
             game.setWon();
 
+            System.out.println("NAME: " + name);
             game.updatePlayerInfo(name);
             game.saveLeaderboard();
 
@@ -153,6 +161,7 @@ class Server extends Thread{
             }
 
             while (!quit) {
+                boolean isEval = false;
                 // right now the client has their menu and were waiting on their
                 // new request
                 Request request = Request.parseDelimitedFrom(in);
@@ -168,6 +177,8 @@ class Server extends Thread{
 
                 if (request.getOperationType() == Request.OperationType.ANSWER) {
                     response = evalResponse(request.getAnswer().toLowerCase(Locale.ROOT), name);
+                    System.out.println("SENDING EVAL");
+                    isEval = true;
                 }
 
                 if (request.getOperationType() == Request.OperationType.QUIT) {
@@ -175,18 +186,29 @@ class Server extends Thread{
                     quit = true;
                 }
 
-                response.writeDelimitedTo(out);
-
-
+                if (isEval) {
+                    for (Server client: connectedClients) {
+                        response.writeDelimitedTo(client.out);
+                    }
+                } else {
+                    response.writeDelimitedTo(out);
+                }
             }
-            if (out != null)  out.close();
-            if (in != null)   in.close();
-            if (clientSocket != null) clientSocket.close();
-
         } catch (Exception ex) {
             ex.printStackTrace();
         } finally {
+            System.out.println("Client " + this.id + " disconnected");
+            connectedClients.remove(this);
+            if (out != null) {
+                try {
+                    out.close();
+                    if (in != null)   in.close();
+                    if (clientSocket != null) clientSocket.close();
 
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
         }
     }
 
@@ -249,11 +271,9 @@ class Server extends Thread{
 
     public static void main (String args[]) throws Exception {
         Game game = new Game();
-        connectedClients = new LinkedList<>();
-        //players = new HashSet<>();
-        int id = 0;
         Socket clientSocket = null;
-
+        connectedClients = new ArrayList<>();
+        index = 0;
 
         try {
             if (args.length != 2) {
@@ -275,8 +295,8 @@ class Server extends Thread{
             while (true) {
                 System.out.println("Waiting for client to connect");
                 clientSocket = serv.accept();
-                System.out.println("Client " + id++ + " connected");
-                Server server = new Server(clientSocket, game);
+                System.out.println("Client " + index + " connected");
+                Server server = new Server(clientSocket, game, index++);
                 connectedClients.add(server);
                 server.start();
             }
