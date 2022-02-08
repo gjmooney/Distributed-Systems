@@ -75,29 +75,19 @@ class SockBaseClient {
             while (!gotResponse) {
 
                 try {
-                    //System.out.println("1");
                     if (stdin.ready()) {
-                        System.out.println("2");
                         answer = stdin.readLine();
-                        System.out.println("3");
                         if (answer.toLowerCase(Locale.ROOT).equals("exit")) {
-                            System.out.println("4");
                             request = quitRequest();
-                            System.out.println("5");
                         } else {
-                            System.out.println("6");
                             request = gameLoopRequest(answer);
-                            System.out.println("7");
                         }
-                        System.out.println("8");
                         request.writeDelimitedTo(out);
-                        System.out.println("9");
                     }
-                    try {
-                        Thread.sleep(50);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
+
+                    // This is to stop the while loop from hogging the CPU
+                    Thread.sleep(50);
+
                     //System.out.println("10");
                     response = handler.getResponse();
                     if (response != null) {
@@ -122,22 +112,17 @@ class SockBaseClient {
                             exit(serverSock, out, in);
                         }
                         handler.nullOutResponse();
-                        /*try {
-                            Thread.sleep(500);
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
-                        }*/
                     }
                 } catch (IOException e) {
                     e.printStackTrace();
+                    e.printStackTrace();
                     System.out.println("YOU DID A BAD");
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                    System.out.println("Gameloop thread interrupted");
                 }
 
             }
-
-
-
-
         }
     }
 

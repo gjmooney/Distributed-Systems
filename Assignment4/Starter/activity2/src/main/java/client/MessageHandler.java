@@ -23,7 +23,8 @@ public class MessageHandler extends Thread{
             try {
                 System.out.println("handler waiting on response");
                 response = Response.parseDelimitedFrom(in);
-                if (response.getResponseType() == Response.ResponseType.WON) {
+                if (response.getResponseType() == Response.ResponseType.WON
+                    || response.getResponseType() == Response.ResponseType.BYE) {
                     keepRunning.set(false);
                     System.out.println("Set false in handler");
                 }
