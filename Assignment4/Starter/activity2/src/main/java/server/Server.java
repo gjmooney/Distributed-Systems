@@ -65,12 +65,19 @@ class Server extends Thread{
     }
 
     public Response startGameResponse(String name) {
-        game.newGame();
+
         game.setNumberOfTilesToFlip(name);
+        String task;
+        if (!game.isWon()) {
+            task = game.getCurrentTask();
+        } else {
+            task = game.chooseTask(name);
+        }
+        game.newGame();
         Response response = Response.newBuilder()
                 .setResponseType(Response.ResponseType.TASK)
                 .setImage(game.getImage())
-                .setTask(game.chooseTask(name))
+                .setTask(task)
                 .build();
         return response;
     }
@@ -83,6 +90,11 @@ class Server extends Thread{
         if (eval) {
             message = "GOOD JOB";
             game.replaceNumCharacters(game.getNumberOfTilesToFlip(name));
+            //TODO
+            //can null out clients task here
+            //set task null (name) something like that
+            // then when calling sttask in the response builder
+            // if its null get a new one else send the old one
         } else {
             message = "OOOOO NAWP";
         }
@@ -99,6 +111,7 @@ class Server extends Thread{
             System.out.println("NAME: " + name);
             game.updatePlayerInfo(name);
             game.saveLeaderboard();
+
 
         } else {
             response = Response.newBuilder()
@@ -177,7 +190,6 @@ class Server extends Thread{
 
                 if (request.getOperationType() == Request.OperationType.ANSWER) {
                     response = evalResponse(request.getAnswer().toLowerCase(Locale.ROOT), name);
-                    System.out.println("SENDING EVAL");
                     isEval = true;
                 }
 
@@ -189,6 +201,8 @@ class Server extends Thread{
                 if (isEval) {
                     for (Server client: connectedClients) {
                         response.writeDelimitedTo(client.out);
+                        System.out.println("SENDING EVAL to " + client.id);
+
                     }
                 } else {
                     response.writeDelimitedTo(out);

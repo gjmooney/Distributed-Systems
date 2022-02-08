@@ -23,6 +23,8 @@ public class Game {
     private int col; // columns in original, approx
     private int row; // rows in original and hidden
     private boolean won; // if the game is won or not
+    private String currentTask;
+    private boolean inProgress;
     private List<String> files = new ArrayList<String>(); // list of files, each file has one image
     JSONObject playerInfo;
 
@@ -132,6 +134,10 @@ public class Game {
         won = true;
     }
 
+    public boolean isWon() {
+        return won;
+    }
+
     /**
      * Method loads in a new image from the specified files and creates the hidden image for it. 
      * @return Nothing.
@@ -188,6 +194,10 @@ public class Game {
         }
         else {
         }
+    }
+
+    public String getCurrentTask() {
+        return currentTask;
     }
 
     /**
@@ -301,7 +311,12 @@ public class Game {
                 setCorrectAnswer(name, "yerp");
                 break;
         }
+        currentTask = taskText;
         return taskText;
+    }
+
+    public boolean isInProgress() {
+        return inProgress;
     }
 
     synchronized public int getIdxMax() {
