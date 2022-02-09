@@ -16,13 +16,21 @@ dependencies {
     compile group: 'com.google.protobuf', name: 'protobuf-java', version: '3.13.0'
 }
 
+sourceSets {
+    main {
+        java {
+            srcDirs 'build/generated/source/proto/main/java'
+        }
+    }
+}
+
 protobuf {
     protoc {
         artifact = 'com.google.protobuf:protoc:3.13.0'
     }
 }
  def host = 'localhost'
- def port = 9099
+ def port = 8000
 
 // task reading in the arguments if any given, if not the default from above will be used
 task arguments {
@@ -52,7 +60,6 @@ task runServer(type: JavaExec) {
   main = 'server.Server'
   // default args
   args port
-  args '1000' // sleep delay will always be this
 }
 
 

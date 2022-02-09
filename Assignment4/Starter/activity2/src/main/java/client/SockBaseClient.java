@@ -2,16 +2,12 @@ package client;
 
 import java.net.*;
 import java.io.*;
-
-import org.json.*;
+import java.util.*;
 
 import buffers.RequestProtos.Request;
 import buffers.ResponseProtos.Response;
 import buffers.ResponseProtos.Entry;
 
-import java.nio.CharBuffer;
-import java.util.*;
-import java.util.stream.Collectors;
 
 class SockBaseClient {
 
@@ -44,8 +40,6 @@ class SockBaseClient {
         return request;
     }
 
-    //TODO can actually replace with setting the while loops to false and it should
-    // drop though to the finally
     public static void exit(Socket serverSock, OutputStream out, InputStream in) {
         try {
             serverSock.close();
@@ -65,7 +59,7 @@ class SockBaseClient {
         MessageHandler handler = new MessageHandler(in);
         handler.start();
         BufferedReader stdin = new BufferedReader(new InputStreamReader(System.in));
-        char[] buf = new char[0];
+
         while (gameOn) {
             System.out.println("\nEnter your answer: ");
             Request request;
@@ -131,8 +125,7 @@ class SockBaseClient {
         Socket socket = null;
         OutputStream out = null;
         InputStream in = null;
-        int i1=0, i2=0;
-        int port = 9099; // default port
+        int port = 8000; // default port
         ArrayList<Player> leaderboardList = new ArrayList<>();
 
         // Make sure two arguments are given
@@ -172,9 +165,8 @@ class SockBaseClient {
 
             // read from the server
             nameResponse = Response.parseDelimitedFrom(in);
-            // display greeting from the server
 
-            // print the server response.
+            // display greeting from the server
             System.out.println(nameResponse.getMessage());
 
             // display menu after sending name
@@ -245,8 +237,6 @@ class SockBaseClient {
                 }
             } while (true);
         } catch (Exception e) {
-            System.out.println("HEER");
-
             e.printStackTrace();
         } finally {
             if (in != null)   in.close();

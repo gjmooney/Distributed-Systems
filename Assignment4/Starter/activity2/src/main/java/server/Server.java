@@ -20,7 +20,7 @@ class Server extends Thread{
     InputStream in = null;
     OutputStream out = null;
     Socket clientSocket = null;
-    int port = 9099; // default port
+    int port = 8000; // default port
     Game game;
     static ArrayList<Server> connectedClients;
     boolean isEval;
@@ -39,11 +39,6 @@ class Server extends Thread{
         } catch (Exception e){
             System.out.println("Error in Server constructor: " + e);
         }
-    }
-
-    public static void addClient(Server clientConnection) {
-        connectedClients.add(clientConnection);
-        index++;
     }
 
     public Response leaderBoardResponse() {
@@ -68,7 +63,6 @@ class Server extends Thread{
     }
 
     public Response startGameResponse(String name) {
-
         game.setNumberOfTilesToFlip(name);
         String task;
         if (!game.isWon()) {
@@ -92,29 +86,22 @@ class Server extends Thread{
         Response response;
 
         if (eval) {
-            message = "GOOD JOB";
+            message = "CORRECT";
             game.replaceNumCharacters(game.getNumberOfTilesToFlip(name));
-            //TODO
-            //can null out clients task here
-            //set task null (name) something like that
-            // then when calling sttask in the response builder
-            // if its null get a new one else send the old one
         } else {
-            message = "OOOOO NAWP";
+            message = "INCORRECT";
         }
 
         if (game.getImage().equals(game.getOriginalImage())) {
             response = Response.newBuilder()
                     .setResponseType(Response.ResponseType.WON)
                     .setImage(game.getImage())
-                    .setMessage("YOU WON BRO\nLETS PLAY AGAIN!!!!!!!")
+                    .setMessage(" ---LETS PLAY AGAIN!!!!!!!----")
                     .build();
             game.setWon();
 
             game.updatePlayerInfo(name);
             game.saveLeaderboard();
-
-
         } else {
             response = Response.newBuilder()
                     .setResponseType(Response.ResponseType.TASK)
@@ -208,9 +195,9 @@ class Server extends Thread{
                 }
             }
         } catch (Exception ex) {
-            ex.printStackTrace();
-        } finally {
             System.out.println("Client " + this.id + " disconnected");
+
+        } finally {
             connectedClients.remove(this);
 
             //reset the game if there are no more connected clients
@@ -227,9 +214,6 @@ class Server extends Thread{
 
         }
     }
-
-
-
 
     /**
      * Writing a new entry to our log
@@ -292,19 +276,16 @@ class Server extends Thread{
         index = 0;
 
         try {
-            if (args.length != 2) {
-                System.out.println("Expected arguments: <port(int)> <delay(int)>");
+            if (args.length != 1) {
+                System.out.println("Expected arguments: <port(int)>");
                 System.exit(1);
             }
-            int port = 9099; // default port
-            int sleepDelay = 10000; // default delay
-            //ServerSocket serv = null;
+            int port = 8000; // default port
 
             try {
                 port = Integer.parseInt(args[0]);
-                sleepDelay = Integer.parseInt(args[1]);
             } catch (NumberFormatException nfe) {
-                System.out.println("[Port|sleepDelay] must be an integer");
+                System.out.println("[Port] must be an integer");
                 System.exit(2);
             }
             ServerSocket serv = new ServerSocket(port);
