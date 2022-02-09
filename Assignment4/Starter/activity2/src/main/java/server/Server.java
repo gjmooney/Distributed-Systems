@@ -23,6 +23,8 @@ class Server extends Thread{
     int port = 9099; // default port
     Game game;
     static ArrayList<Server> connectedClients;
+    boolean isEval;
+
 
 
 
@@ -30,6 +32,7 @@ class Server extends Thread{
         this.clientSocket = sock;
         this.game = game;
         this.id = index;
+        this.isEval = false;
         try {
             in = clientSocket.getInputStream();
             out = clientSocket.getOutputStream();
@@ -170,7 +173,6 @@ class Server extends Thread{
             }
 
             while (!quit) {
-                boolean isEval = false;
                 // right now the client has their menu and were waiting on their
                 // new request
                 Request request = Request.parseDelimitedFrom(in);
@@ -196,9 +198,10 @@ class Server extends Thread{
 
                 if (isEval) {
                     for (Server client: connectedClients) {
-                        response.writeDelimitedTo(client.out);
-                        System.out.println("SENDING EVAL to " + client.id);
-
+                        if (client.isEval) {
+                            response.writeDelimitedTo(client.out);
+                            System.out.println("SENDING EVAL to " + client.id);
+                        }
                     }
                 } else {
                     response.writeDelimitedTo(out);
