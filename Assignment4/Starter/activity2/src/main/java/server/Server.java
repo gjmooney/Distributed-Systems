@@ -94,8 +94,8 @@ class Server extends Thread{
 
         if (eval) {
             message = "CORRECT";
-            //game.replaceNumCharacters(game.getNumberOfTilesToFlip(name));
-            game.replaceNumCharacters(100);
+            game.replaceNumCharacters(game.getNumberOfTilesToFlip(name));
+            //game.replaceNumCharacters(100);
 
             numCorrect++;
         } else {

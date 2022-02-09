@@ -1,8 +1,5 @@
 package client;
 
-import java.util.*;
-import java.util.stream.Collectors;
-
 /**
  * Class: Player 
  * Description: Class that represents a Player, I only used it in my Client 

@@ -27,7 +27,7 @@ public class Game {
     private String currentTask;
     private boolean inProgress;
     private List<String> files = new ArrayList<String>(); // list of files, each file has one image
-    JSONObject playerInfo;
+    private JSONObject playerInfo;
 
     private String correctAnswer;
 
@@ -170,9 +170,12 @@ public class Game {
                     }
                     rows.add(line);
                 }
-            }
-            catch (Exception e){
+                br.close();
+            } catch (FileNotFoundException e){
                 System.out.println("File load error"); // extremely simple error handling, you can do better if you like. 
+            } catch (IOException e) {
+                System.out.println("New Game IO Error");
+                e.printStackTrace();
             }
 
             // this handles creating the orinal array and the hidden array in the correct size
@@ -246,7 +249,7 @@ public class Game {
      * @param num -- number of x to be turned
      * @return String of the new hidden image
      */
-    public String replaceNumCharacters(int num){
+    synchronized public String replaceNumCharacters(int num){
         for (int i = 0; i < num; i++){
             if (getIdx()< getIdxMax())
                 replaceOneCharacter();
@@ -311,16 +314,15 @@ public class Game {
                 setCorrectAnswer(name, correctAnswer);
                 break;
             case (5):
-                //taskText = "Type Incomprehensibilities";
-                taskText = "Type 2";
-                correctAnswer = String.valueOf(2);
+                taskText = "Type Incomprehensibilities";
+                //taskText = "Type 2";
+                correctAnswer = "incomprehensibilities";
                 setCorrectAnswer(name, correctAnswer);
                 break;
             case (6):
-                //taskText = "Sort the numbers (Only enter numbers)\n 2 45 5 2 8 19 27 6 93 1";
-                taskText = "enter a ";
-                //setCorrectAnswer(name, "12256819274593");
-                correctAnswer = "a";
+                taskText = "Sort the numbers (Only enter numbers)\n 2 45 5 2 8 19 27 6 93 1";
+                //taskText = "enter a ";
+                correctAnswer = "12256819274593";
                 setCorrectAnswer(name, correctAnswer);
                 break;
             default:
