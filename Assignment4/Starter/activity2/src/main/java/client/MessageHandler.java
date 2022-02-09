@@ -21,15 +21,17 @@ public class MessageHandler extends Thread{
      public void run() {
         while (keepRunning.get()) {
             try {
-                System.out.println("handler waiting on response");
+                //System.out.println("handler waiting on response");
                 response = Response.parseDelimitedFrom(in);
                 if (response.getResponseType() == Response.ResponseType.WON
                     || response.getResponseType() == Response.ResponseType.BYE) {
                     keepRunning.set(false);
                     System.out.println("Set false in handler");
                 }
-                System.out.println("handler got response " + count++);
+                //System.out.println("handler got response " + count++);
             } catch (IOException e) {
+                System.out.println("THERAD");
+
                 e.printStackTrace();
             }
         }

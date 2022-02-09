@@ -9,6 +9,7 @@ import buffers.RequestProtos.Request;
 import buffers.ResponseProtos.Response;
 import buffers.ResponseProtos.Entry;
 
+import java.nio.CharBuffer;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -58,24 +59,26 @@ class SockBaseClient {
 
     }
 
-    public static void gameLoop(Socket serverSock, OutputStream out, InputStream in) {
+    public static void gameLoop(Socket serverSock, OutputStream out, InputStream in) throws IOException {
         System.out.println("GAME LOOP");
         boolean gameOn = true;
         MessageHandler handler = new MessageHandler(in);
         handler.start();
-
+        BufferedReader stdin = new BufferedReader(new InputStreamReader(System.in));
+        char[] buf = new char[0];
         while (gameOn) {
             System.out.println("\nEnter your answer: ");
-            BufferedReader stdin = new BufferedReader(new InputStreamReader(System.in));
             Request request;
             Response response = null;
             String answer = "";
             boolean gotResponse = false;
 
             while (!gotResponse) {
-
                 try {
+
+
                     if (stdin.ready()) {
+                        System.out.println("CLIENT STDIN: " + stdin);
                         answer = stdin.readLine();
                         if (answer.toLowerCase(Locale.ROOT).equals("exit")) {
                             request = quitRequest();
@@ -84,15 +87,14 @@ class SockBaseClient {
                         }
                         request.writeDelimitedTo(out);
                     }
-
                     // This is to stop the while loop from hogging the CPU
                     Thread.sleep(50);
 
-                    //System.out.println("10");
                     response = handler.getResponse();
                     if (response != null) {
                         gotResponse = true;
                         if (response.getResponseType() == Response.ResponseType.TASK) {
+                            System.out.println("\n");
                             System.out.println(response.getMessage());
                             System.out.println();
                             System.out.println(response.getImage());
@@ -114,7 +116,6 @@ class SockBaseClient {
                         handler.nullOutResponse();
                     }
                 } catch (IOException e) {
-                    e.printStackTrace();
                     e.printStackTrace();
                     System.out.println("YOU DID A BAD");
                 } catch (InterruptedException e) {
@@ -171,7 +172,7 @@ class SockBaseClient {
 
             // read from the server
             nameResponse = Response.parseDelimitedFrom(in);
-            // display greeting fomr the server
+            // display greeting from the server
 
             // print the server response.
             System.out.println(nameResponse.getMessage());
@@ -238,13 +239,14 @@ class SockBaseClient {
                             exit(socket, out, in);
                         }
                     }
-                } catch (Exception e) {
-                    e.printStackTrace();
+                } catch (InputMismatchException e) {
                     input = new Scanner(System.in);
-                    System.out.println("Please Enter a valid number");
+                    System.out.println("Please Enter a valid selection (1, 2, or 3");
                 }
             } while (true);
         } catch (Exception e) {
+            System.out.println("HEER");
+
             e.printStackTrace();
         } finally {
             if (in != null)   in.close();

@@ -84,6 +84,7 @@ class Server extends Thread{
 
     public Response evalResponse(String answer, String name) {
         boolean eval = game.getCorrectAnswer().equals(answer);
+        System.out.println("RECEIVED " + answer + " FROM " + id);
         String message;
         Response response;
 
@@ -100,7 +101,6 @@ class Server extends Thread{
         }
 
         if (game.getImage().equals(game.getOriginalImage())) {
-
             response = Response.newBuilder()
                     .setResponseType(Response.ResponseType.WON)
                     .setImage(game.getImage())
@@ -108,7 +108,6 @@ class Server extends Thread{
                     .build();
             game.setWon();
 
-            System.out.println("NAME: " + name);
             game.updatePlayerInfo(name);
             game.saveLeaderboard();
 
@@ -122,8 +121,8 @@ class Server extends Thread{
                     .setMessage(message)
                     .build();
         }
-        return response;
 
+        return response;
     }
 
     public Response quitResponse() {
@@ -159,9 +158,6 @@ class Server extends Thread{
                 writeToLog(name, Message.CONNECT);
                 System.out.println("Got a connection and a name: " + name);
 
-                //leaderboard stuff
-
-
                 Response response = Response.newBuilder()
                         .setResponseType(Response.ResponseType.GREETING)
                         .setMessage("Hello " + name + " and welcome.")
@@ -170,7 +166,7 @@ class Server extends Thread{
 
                 game.addClientToPlayerInfo(name.toLowerCase(Locale.ROOT));
             } else {
-                //TODO something bad appen make an error
+                System.out.println("Message type not recognized");
             }
 
             while (!quit) {
@@ -213,16 +209,19 @@ class Server extends Thread{
         } finally {
             System.out.println("Client " + this.id + " disconnected");
             connectedClients.remove(this);
-            if (out != null) {
+
+            //reset the game if there are no more connected clients
+            if (connectedClients.size() == 0) {
+                game.setWon();
+            }
                 try {
-                    out.close();
+                    if (out != null) out.close();
                     if (in != null)   in.close();
                     if (clientSocket != null) clientSocket.close();
-
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
-            }
+
         }
     }
 
