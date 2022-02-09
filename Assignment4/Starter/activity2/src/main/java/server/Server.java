@@ -91,17 +91,16 @@ class Server extends Thread{
         String message;
         Response response;
 
+
         if (eval) {
             message = "CORRECT";
-            game.replaceNumCharacters(game.getNumberOfTilesToFlip(name));
-            //game.replaceNumCharacters(100);
+            //game.replaceNumCharacters(game.getNumberOfTilesToFlip(name));
+            game.replaceNumCharacters(100);
 
             numCorrect++;
         } else {
             message = "INCORRECT";
         }
-
-        System.out.println("NAME " + name);
 
         if (game.getImage().equals(game.getOriginalImage())) {
             response = Response.newBuilder()
@@ -111,7 +110,14 @@ class Server extends Thread{
                     .build();
             game.setWon();
 
-            game.updatePlayerInfo(name);
+
+            for (Server client : connectedClients) {
+                if (client.numCorrect > 0) {
+
+                    game.updatePlayerInfo(client.name);
+                }
+
+            }
             game.saveLeaderboard();
 
 

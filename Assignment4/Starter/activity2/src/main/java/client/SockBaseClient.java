@@ -71,7 +71,6 @@ class SockBaseClient {
 
 
                     if (stdin.ready()) {
-                        System.out.println("CLIENT STDIN: " + stdin);
                         answer = stdin.readLine();
                         if (answer.toLowerCase(Locale.ROOT).equals("exit")) {
                             request = quitRequest();
@@ -210,6 +209,7 @@ class SockBaseClient {
                             }
                             Collections.sort(leaderboardList);
                             System.out.println("----LEADERBOARD----");
+                            System.out.println("\n---WINS -- PLAYER---");
                             for (Player player: leaderboardList) {
                                 System.out.println(player.toString());
 

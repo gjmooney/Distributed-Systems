@@ -33,6 +33,6 @@ public class Player implements Comparable<Player> {
 
     @Override
        public String toString() {
-            return ("\n" +this.wins + ": " + this.name);
+            return ("---" + this.wins + " -- " + this.name + "---\n");
        }
 }
