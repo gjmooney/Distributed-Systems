@@ -1,4 +1,5 @@
 package server;
+import org.json.JSONException;
 import org.json.JSONObject;
 import org.json.JSONTokener;
 
@@ -52,13 +53,18 @@ public class Game {
          JSONTokener tokener;
          try {
              File file = new File("src/main/resources/leaderboard.txt");
+
              leaderboardReader = new BufferedReader(new FileReader(file));
              tokener = new JSONTokener(leaderboardReader);
              return new JSONObject(tokener);
          } catch (FileNotFoundException e) {
              System.out.println("No leaderboard yet");
              return new JSONObject();
-         } finally {
+         } catch (JSONException e) {
+             System.out.println("Leaderboard file is blank");
+             return new JSONObject();
+         }
+         finally {
              if (leaderboardReader != null) {
                  try {
                      leaderboardReader.close();
@@ -276,41 +282,54 @@ public class Game {
         Random rand = new Random();
         int task = rand.nextInt(7);
         String taskText;
+        String correctAnswer;
 
         switch (task) {
             case (0):
                 taskText = "Enter e";
-                setCorrectAnswer(name, "e");
+                correctAnswer = "e";
+                setCorrectAnswer(name, correctAnswer);
                 break;
             case (1):
                 taskText = "What's 2 * 3 ?";
-                setCorrectAnswer(name, String.valueOf(6));
+                correctAnswer = String.valueOf(6);
+                setCorrectAnswer(name, correctAnswer);
                 break;
             case (2):
                 taskText = "What's the missing vowel? \nB*n*n*";
-                setCorrectAnswer(name, "a");
+                correctAnswer = "a";
+                setCorrectAnswer(name, correctAnswer);
                 break;
             case (3):
                 taskText = "What is the capital of Germany?";
-                setCorrectAnswer(name, "berlin");
+                correctAnswer = "berlin";
+                setCorrectAnswer(name, correctAnswer);
                 break;
             case (4):
                 taskText = "Count the vowels in Strength.\nHow many are there?";
-                setCorrectAnswer(name, String.valueOf(1));
+                correctAnswer = String.valueOf(1);
+                setCorrectAnswer(name, correctAnswer);
                 break;
             case (5):
-                taskText = "Type Incomprehensibilities";
-                setCorrectAnswer(name, "incomprehensibilities");
+                //taskText = "Type Incomprehensibilities";
+                taskText = "Type 2";
+                correctAnswer = String.valueOf(2);
+                setCorrectAnswer(name, correctAnswer);
                 break;
             case (6):
-                taskText = "Sort the numbers (Only enter numbers)\n 2 45 5 2 8 19 27 6 93 1";
-                setCorrectAnswer(name, "12256819274593");
+                //taskText = "Sort the numbers (Only enter numbers)\n 2 45 5 2 8 19 27 6 93 1";
+                taskText = "enter a ";
+                //setCorrectAnswer(name, "12256819274593");
+                correctAnswer = "a";
+                setCorrectAnswer(name, correctAnswer);
                 break;
             default:
                 taskText = "we broke";
-                setCorrectAnswer(name, "yerp");
+                correctAnswer = "This shouldn't happen";
+                setCorrectAnswer(name, correctAnswer);
                 break;
         }
+        System.out.println(correctAnswer);
         currentTask = taskText;
         return taskText;
     }

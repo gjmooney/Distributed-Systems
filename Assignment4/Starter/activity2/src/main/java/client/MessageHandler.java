@@ -27,6 +27,10 @@ public class MessageHandler extends Thread{
             } catch (IOException e) {
                 System.out.println("MessageHandler");
                 e.printStackTrace();
+            } catch (NullPointerException e) {
+                System.out.println("Lost server");
+                keepRunning.set(false);
+                System.exit(2);
             }
         }
 

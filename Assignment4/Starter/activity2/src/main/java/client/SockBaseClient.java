@@ -54,7 +54,6 @@ class SockBaseClient {
     }
 
     public static void gameLoop(Socket serverSock, OutputStream out, InputStream in) throws IOException {
-        System.out.println("GAME LOOP");
         boolean gameOn = true;
         MessageHandler handler = new MessageHandler(in);
         handler.start();
@@ -234,6 +233,10 @@ class SockBaseClient {
                 } catch (InputMismatchException e) {
                     input = new Scanner(System.in);
                     System.out.println("Please Enter a valid selection (1, 2, or 3");
+                } catch (SocketException e) {
+                    System.out.println("Cannot communicate with the server\n" +
+                            "Shutting down client...");
+                    System.exit(2);
                 }
             } while (true);
         } catch (Exception e) {

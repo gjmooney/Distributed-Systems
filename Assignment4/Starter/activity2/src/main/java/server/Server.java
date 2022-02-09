@@ -63,7 +63,6 @@ class Server extends Thread{
     }
 
     public Response startGameResponse(String name) {
-        game.setNumberOfTilesToFlip(name);
         String task;
         if (!game.isWon()) {
             task = game.getCurrentTask();
@@ -71,6 +70,8 @@ class Server extends Thread{
             task = game.chooseTask(name);
         }
         game.newGame();
+        game.setNumberOfTilesToFlip(name);
+
         Response response = Response.newBuilder()
                 .setResponseType(Response.ResponseType.TASK)
                 .setImage(game.getImage())
@@ -164,6 +165,7 @@ class Server extends Thread{
                 // new request
                 Request request = Request.parseDelimitedFrom(in);
                 Response response = null;
+                isEval = false;
 
                 if (request.getOperationType() == Request.OperationType.LEADER) {
                     response = leaderBoardResponse();
