@@ -24,6 +24,9 @@ class Server extends Thread{
     Game game;
     static ArrayList<Server> connectedClients;
     boolean isEval;
+    int numCorrect;
+    String name;
+
 
 
 
@@ -33,6 +36,8 @@ class Server extends Thread{
         this.game = game;
         this.id = index;
         this.isEval = false;
+        this.numCorrect = 0;
+        this.name = "";
         try {
             in = clientSocket.getInputStream();
             out = clientSocket.getOutputStream();
@@ -82,16 +87,21 @@ class Server extends Thread{
 
     public Response evalResponse(String answer, String name) {
         boolean eval = game.getCorrectAnswer().equals(answer);
-        System.out.println("RECEIVED " + answer + " FROM " + id);
+        //System.out.println("RECEIVED " + answer + " FROM " + id);
         String message;
         Response response;
 
         if (eval) {
             message = "CORRECT";
             game.replaceNumCharacters(game.getNumberOfTilesToFlip(name));
+            //game.replaceNumCharacters(100);
+
+            numCorrect++;
         } else {
             message = "INCORRECT";
         }
+
+        System.out.println("NAME " + name);
 
         if (game.getImage().equals(game.getOriginalImage())) {
             response = Response.newBuilder()
@@ -103,6 +113,8 @@ class Server extends Thread{
 
             game.updatePlayerInfo(name);
             game.saveLeaderboard();
+
+
         } else {
             response = Response.newBuilder()
                     .setResponseType(Response.ResponseType.TASK)
@@ -130,7 +142,6 @@ class Server extends Thread{
     // can handle multiple requests and does not crash when the server crashes
     // you can use this server as based or start a new one if you prefer.
     public void run() {
-        String name = "";
         boolean quit = false;
 
         System.out.println("Ready...");
@@ -173,6 +184,7 @@ class Server extends Thread{
 
                 if (request.getOperationType() == Request.OperationType.NEW) {
                     response = startGameResponse(name);
+                    isEval = true;
                 }
 
                 if (request.getOperationType() == Request.OperationType.ANSWER) {
@@ -189,7 +201,7 @@ class Server extends Thread{
                     for (Server client: connectedClients) {
                         if (client.isEval) {
                             response.writeDelimitedTo(client.out);
-                            System.out.println("SENDING EVAL to " + client.id);
+                            //System.out.println("SENDING EVAL to " + client.id);
                         }
                     }
                 } else {

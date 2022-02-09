@@ -329,7 +329,7 @@ public class Game {
                 setCorrectAnswer(name, correctAnswer);
                 break;
         }
-        System.out.println(correctAnswer);
+        System.out.println("The correct answer is: " + correctAnswer);
         currentTask = taskText;
         return taskText;
     }
