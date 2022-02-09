@@ -113,8 +113,8 @@ class Server extends Thread{
 
             for (Server client : connectedClients) {
                 if (client.numCorrect > 0) {
-
                     game.updatePlayerInfo(client.name);
+                    client.numCorrect = 0;
                 }
 
             }
@@ -219,7 +219,7 @@ class Server extends Thread{
 
         } finally {
             connectedClients.remove(this);
-
+            System.out.println("Client " + this.id + " disconnected");
             //reset the game if there are no more connected clients
             if (connectedClients.size() == 0) {
                 game.setWon();

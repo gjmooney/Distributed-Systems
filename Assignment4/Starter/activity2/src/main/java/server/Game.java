@@ -266,7 +266,12 @@ public class Game {
             if ((int) temp.get("tilesToFlip") == 1) {
                 numToFlip = minimum;
             } else {
-                numToFlip = minimum + ((int) temp.get("logins") - (int) temp.get("wins"));
+                int extra;
+                // make sure extra is positive
+                int fancy = ((int) temp.get("logins") - (int) temp.get("wins"));
+                extra = (fancy >= 0) ? fancy : fancy * -1;
+                
+                numToFlip = minimum + extra;
             }
             temp.put("tilesToFlip", numToFlip);
         }
