@@ -270,7 +270,7 @@ public class Game {
                 // make sure extra is positive
                 int fancy = ((int) temp.get("logins") - (int) temp.get("wins"));
                 extra = (fancy >= 0) ? fancy : fancy * -1;
-                
+
                 numToFlip = minimum + extra;
             }
             temp.put("tilesToFlip", numToFlip);
