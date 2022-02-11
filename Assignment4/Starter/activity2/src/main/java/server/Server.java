@@ -97,7 +97,7 @@ class Server extends Thread{
             game.replaceNumCharacters(game.getNumberOfTilesToFlip(name));
             //game.replaceNumCharacters(100);
 
-            numCorrect++;
+            game.setNumCorrect(name, false);
         } else {
             message = "INCORRECT";
         }
@@ -112,8 +112,9 @@ class Server extends Thread{
 
 
             for (Server client : connectedClients) {
-                if (client.numCorrect > 0) {
+                if (game.getNumCorrect(client.name) > 0) {
                     game.updatePlayerInfo(client.name);
+                    game.setNumCorrect(client.name, true);
                     client.numCorrect = 0;
                 }
 

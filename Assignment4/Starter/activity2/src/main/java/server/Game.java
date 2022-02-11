@@ -83,6 +83,7 @@ public class Game {
             stats.put("logins", 1);
             stats.put("taskAnswer", "");
             stats.put("tilesToFlip" , 1);
+            stats.put("numCorrect", 0);
             playerInfo.put(name, stats);
         } else {
             JSONObject temp = (JSONObject) playerInfo.get(name);
@@ -97,6 +98,32 @@ public class Game {
          } else {
              System.out.println("update leaderboard issue");
          }
+    }
+
+    synchronized public int getNumCorrect(String name) {
+        if (playerInfo.has(name)) {
+            JSONObject temp = (JSONObject) playerInfo.get(name);
+            return (int) temp.get("numCorrect");
+        } else {
+            System.out.println("getNumCorrect");
+            return  -1;
+        }
+    }
+
+    synchronized public void setNumCorrect(String name, boolean reset) {
+        if (playerInfo.has(name)) {;
+            JSONObject temp = (JSONObject) playerInfo.get(name);
+
+            int newNumCorrect;
+            if (reset) {
+                newNumCorrect = 0;
+            } else {
+                newNumCorrect = (int) temp.get("numCorrect") + 1;
+            }
+            temp.put("numCorrect", newNumCorrect);
+        } else {
+            System.out.println("getNumCorrect");
+        }
     }
 
     synchronized public void saveLeaderboard() {
