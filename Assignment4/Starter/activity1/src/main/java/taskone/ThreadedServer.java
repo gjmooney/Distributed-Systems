@@ -54,9 +54,6 @@ class ThreadedServer extends Thread {
                 sock = server.accept();
                 System.out.println("Accepted request on a new thread: Client - " + id++);
 
-//                ThreadedServer serverThread = new ThreadedServer(sock, id);
-//                serverThread.start();
-
                 Performer performer = new Performer(sock, strings);
                 performer.start();
             }

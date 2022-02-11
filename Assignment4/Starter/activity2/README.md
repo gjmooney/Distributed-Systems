@@ -1,3 +1,8 @@
+# Assignment 4 Activity 2
+
+### Recording
+https://youtu.be/5VrToIm2MoQ
+
 ### Description
 
 This project is a multi threaded client/server based game using Protocol Buffer to communicate. Upon starting the server it begins listening for incoming connections. When starting the client, it first prompts the user for their name and then establishes a connection with the server. When the server receives this connection request it spawns a new thread that begins to listen for input from that client. The main server thread then begins listening for more connection requests.    

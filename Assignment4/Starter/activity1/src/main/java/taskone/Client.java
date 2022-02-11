@@ -199,15 +199,9 @@ public class Client {
 
                 if (request != null) {
                     //System.out.println(request);
-                    System.out.println("test");
                     NetworkUtils.send(out, JsonUtils.toByteArray(request));
-                    System.out.println("TEST");
                     byte[] responseBytes = NetworkUtils.receive(in);
-                    System.out.println("test");
-
                     JSONObject response = JsonUtils.fromByteArray(responseBytes);
-                    System.out.println("test");
-
 
                     if (response.has("error")) {
                         System.out.println(response.getString("error"));
