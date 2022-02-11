@@ -40,6 +40,7 @@ class ThreadPoolServer {
             System.exit(2);
         }
         ServerSocket server = new ServerSocket(port);
+        System.out.println("Pool size is " + poolSize);
         Executor pool = Executors.newFixedThreadPool(poolSize);
         System.out.println("ThreadPoolServer Started...");
         try {
@@ -52,7 +53,8 @@ class ThreadPoolServer {
 
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            System.out.println("Client disconnected");
+            //e.printStackTrace();
         } finally {
             if (sock != null) {
                 System.out.println("close socket of client ");

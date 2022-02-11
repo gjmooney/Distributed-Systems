@@ -6,6 +6,7 @@
 
 package taskone;
 
+import org.json.JSONException;
 import org.json.JSONObject;
 
 /**
@@ -13,9 +14,9 @@ import org.json.JSONObject;
  * Description: Json Utilities.
  */
 public class JsonUtils {
-    public static JSONObject fromByteArray(byte[] bytes) {
+    public static JSONObject fromByteArray(byte[] bytes) throws JSONException {
         String jsonString = new String(bytes);
-        System.out.println(jsonString);
+        //System.out.println(jsonString);
         return new JSONObject(jsonString);
     }
 

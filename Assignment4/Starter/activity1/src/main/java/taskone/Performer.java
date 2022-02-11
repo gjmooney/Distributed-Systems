@@ -94,7 +94,7 @@ class Performer extends Thread {
         try {
             out = conn.getOutputStream();
             in = conn.getInputStream();
-            System.out.println("Threaded Performer connected to client:");
+            System.out.println("Threaded Performer connected to client");
             while (!quit) {
                 byte[] messageBytes = NetworkUtils.receive(in);
                 JSONObject message = JsonUtils.fromByteArray(messageBytes);
@@ -137,7 +137,8 @@ class Performer extends Thread {
             out.close();
             in.close();
         } catch (IOException e) {
-            e.printStackTrace();
+            //e.printStackTrace();
+            System.out.println("Performer disconnected");
         }
     }
 

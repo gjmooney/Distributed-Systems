@@ -15,6 +15,7 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.util.Base64;
+import java.util.InputMismatchException;
 import java.util.Scanner;
 import javax.imageio.ImageIO;
 import javax.swing.ImageIcon;
@@ -152,48 +153,61 @@ public class Client {
             OutputStream out = sock.getOutputStream();
             InputStream in = sock.getInputStream();
             Scanner input = new Scanner(System.in);
-            int choice;
+            JSONObject request = null;
+            int choice = 9;
             do {
                 System.out.println();
                 System.out.println("Client Menu");
-                System.out.println("Please select a valid option (1-5). 0 to diconnect the client");
+                System.out.println("Please select a valid option (1-5). 0 to disconnect the client");
                 System.out.println("1. add <string> - adds a string to the list and display it");
-                System.out.println("2. pop - remove the top elemnt");
+                System.out.println("2. pop - remove the top element");
                 System.out.println("3. display - display the list");
                 System.out.println("4. count - returns the elements in the list");
                 System.out.println("5. switch <int> <int> - switch two string");
                 System.out.println("0. quit");
                 System.out.println();
-                choice = input.nextInt(); // what if not int.. should error handle this
-                JSONObject request = null;
-                switch (choice) {
-                    case (1):
-                        request = add();
-                        break;
-                    case (2):
-                        request = pop();
-                        break;
-                    case (3):
-                        request = display();
-                        break;
-                    case (4):
-                        request = count();
-                        break;
-                    case (5):
-                        request = switching();
-                        break;
-                    case (0):
-                        request = quit();
-                        break;
-                    default:
-                        System.out.println("Please select a valid option (0-6).");
-                        break;
+                try {
+                    choice = input.nextInt(); // what if not int.. should error handle this
+                    request = null;
+                    switch (choice) {
+                        case (1):
+                            request = add();
+                            break;
+                        case (2):
+                            request = pop();
+                            break;
+                        case (3):
+                            request = display();
+                            break;
+                        case (4):
+                            request = count();
+                            break;
+                        case (5):
+                            request = switching();
+                            break;
+                        case (0):
+                            request = quit();
+                            break;
+                        default:
+                            System.out.println("Please select a valid option (1-5).");
+                            break;
+                    }
+                } catch (InputMismatchException e) {
+                    System.out.println("Please enter a valid selection.");
+                    input.nextLine();
                 }
+
                 if (request != null) {
-                    System.out.println(request);
+                    //System.out.println(request);
+                    System.out.println("test");
                     NetworkUtils.send(out, JsonUtils.toByteArray(request));
+                    System.out.println("TEST");
                     byte[] responseBytes = NetworkUtils.receive(in);
+                    System.out.println("test");
+
                     JSONObject response = JsonUtils.fromByteArray(responseBytes);
+                    System.out.println("test");
+
 
                     if (response.has("error")) {
                         System.out.println(response.getString("error"));
