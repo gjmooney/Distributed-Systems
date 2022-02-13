@@ -32,6 +32,11 @@ public class Leader implements Runnable{
     }
 
     public static void main (String[] args) throws Exception {
+        int nodeSocket = 8001;
+        NodeHandler nodeHandler = new NodeHandler();
+        Thread thread = new Thread(nodeHandler);
+        thread.start();
+
         Socket clientSocket = null;
         connectedNodes = new ArrayList<>();
         connectedClients = new ArrayList<>();
@@ -42,7 +47,7 @@ public class Leader implements Runnable{
                 System.out.println("Expected arguments: <port(int)>");
                 System.exit(1);
             }
-            int port = 8000; // default port
+            int port = 8000; // default client port
 
             try {
                 port = Integer.parseInt(args[0]);
@@ -50,15 +55,17 @@ public class Leader implements Runnable{
                 System.out.println("[Port] must be an integer");
                 System.exit(2);
             }
+
             ServerSocket serv = new ServerSocket(port);
             while (true) {
                 System.out.println("Waiting for client to connect");
-                clientSocket = serv.accept();
+                clientSocket = serv.accept(); //listening on 8000
                 System.out.println("Client " + index + " connected");
                 Leader leader = new Leader(clientSocket, index++);
                 connectedClients.add(leader);
                 leader.run();
             }
+
         } catch (Exception e) {
             e.printStackTrace();
         } finally {

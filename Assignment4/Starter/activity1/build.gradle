@@ -27,7 +27,7 @@ task arguments {
     }
 }
 
-// run with arguments e.g.: gradle runServer -Pport=9099 -q --console=plain
+// run with arguments e.g.: gradle runTask1 -Pport=9099 -q --console=plain
 task runTask1(type: JavaExec) {
   group 'server'
   description 'Creates Server socket waits for messages'
@@ -41,7 +41,7 @@ task runTask1(type: JavaExec) {
   
 }
 
-// run with arguments e.g.: gradle runServer -Pport=9099 -q --console=plain
+// run with arguments e.g.: gradle runTask2 -Pport=9099 -q --console=plain
 task runTask2(type: JavaExec) {
   group 'server'
   description 'Creates Server socket waits for messages'
@@ -55,7 +55,7 @@ task runTask2(type: JavaExec) {
   args port
 }
 
-// run with arguments e.g.: gradle runServer -Pport=9099 -Pthreads=5 -q --console=plain
+// run with arguments e.g.: gradle runTask3 -Pport=9099 -Pthreads=5 -q --console=plain
 task runTask3(type: JavaExec) {
   group 'server'
   description 'Creates Server socket waits for messages'
@@ -70,7 +70,7 @@ task runTask3(type: JavaExec) {
   args threads
 }
 
-// run with arguments e.g.: gradle runClient -Phost=localhost -Pport=9099 -q --console=plain
+// run with arguments e.g.: n
 task runClient(type: JavaExec) {
   group 'client'
   description 'Creates client socket sends a message to the server'

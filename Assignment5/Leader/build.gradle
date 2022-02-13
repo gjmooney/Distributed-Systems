@@ -65,4 +65,13 @@ task node2(type: JavaExec) {
   args 8002
   args 2000 // money
 }
+
+task node3(type: JavaExec) {
+  classpath = sourceSets.main.runtimeClasspath
+  description = "Run Server for quote guessing game"
+  main = 'Node'
+  // default args
+  args 8003
+  args 2000 // money
+}
  
