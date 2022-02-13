@@ -1,0 +1,52 @@
+// set as java application
+apply plugin: 'application'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+   // https://mvnrepository.com/artifact/org.json/json
+compile group: 'org.json', name: 'json', version: '20200518'
+}
+
+//define main class
+mainClassName = 'NodeStarter'
+
+task Starter(type: JavaExec) {
+  group 'simple'
+  description 'Base sample'
+
+  classpath = sourceSets.main.runtimeClasspath
+
+  main = 'mergeSort.MergeSort'
+  standardInput = System.in
+
+  args 7000
+  args "localhost"
+}
+
+task Branch(type: JavaExec) {
+  group 'simple'
+  description 'Base sample'
+
+  classpath = sourceSets.main.runtimeClasspath
+
+  main = 'mergeSort.Branch'
+  standardInput = System.in
+  args 7000
+  args 8000
+  args 8001
+
+}
+
+task Sorter(type: JavaExec) {
+  group 'simple'
+  description 'Base sample'
+
+  classpath = sourceSets.main.runtimeClasspath
+
+  main = 'mergeSort.Sorter'
+  standardInput = System.in
+  args 8000
+}

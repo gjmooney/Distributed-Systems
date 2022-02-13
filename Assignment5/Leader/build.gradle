@@ -1,0 +1,68 @@
+// set as java application
+apply plugin: 'application'
+
+//define main class
+mainClassName = 'Leader'
+
+    def host = 'localhost'
+    def port = 8000
+    
+// task reading in the arguments if any given, if not the default from above will be used
+task arguments {
+    if (project.hasProperty("host")) {
+      host = project.getProperty("host")
+    }
+    if (project.hasProperty("port")) {
+      port = project.getProperty("port")
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation group: 'org.json', name: 'json', version: '20200518'
+}
+
+//gradle runClient -Pport=8080 -Phost='localhost'
+task client(type: JavaExec) {
+  classpath = sourceSets.main.runtimeClasspath
+  group 'gui'
+  description 'Displays a GUI for a game of concentration'
+  main = 'Client'
+  standardInput = System.in
+  
+  args host
+  args 8000 // port to leader
+}
+
+//gradle runServer -Pport=9099
+task leader(type: JavaExec) {
+  classpath = sourceSets.main.runtimeClasspath
+  description = "Run Server for quote guessing game"
+  main = 'Leader'
+  // default args
+  args 8000 // client port
+  args 8001 // node 1 port
+  args 8002 // node 2 port 
+}
+
+task node1(type: JavaExec) {
+  classpath = sourceSets.main.runtimeClasspath
+  description = "Run Server for quote guessing game"
+  main = 'Node'
+  // default args
+  args 8001
+  args 1000 //initial money 
+}
+
+task node2(type: JavaExec) {
+  classpath = sourceSets.main.runtimeClasspath
+  description = "Run Server for quote guessing game"
+  main = 'Node'
+  // default args
+  args 8002
+  args 2000 // money
+}
+ 
