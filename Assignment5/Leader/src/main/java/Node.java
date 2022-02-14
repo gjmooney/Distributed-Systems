@@ -12,7 +12,7 @@ public class Node {
         ObjectOutputStream out = null;
         ObjectInputStream in = null;
         int port = 8000; // default
-        int money;
+        int money = 1000;
         String host = "localhost";
 
         if (args.length != 2) {
@@ -22,11 +22,13 @@ public class Node {
         try {
             port = Integer.parseInt(args[0]);
             money = Integer.parseInt(args[1]);
+            System.out.println(Integer.parseInt(args[1]));
         } catch (NumberFormatException nfe) {
             System.out.println("[Port|Money] must be integer");
             System.exit(2);
         }
         System.out.println("NODE PRT: " + port);
+        System.out.println("NODE MONEY " + money);
 
         try {
             leaderSocket = new Socket(host, port);

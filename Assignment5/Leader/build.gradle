@@ -6,6 +6,7 @@ mainClassName = 'Leader'
 
     def host = 'localhost'
     def port = 8000
+    def money = 1000
     
 // task reading in the arguments if any given, if not the default from above will be used
 task arguments {
@@ -14,6 +15,9 @@ task arguments {
     }
     if (project.hasProperty("port")) {
       port = project.getProperty("port")
+    }
+    if (project.hasProperty("money")) {
+      money = project.getProperty("money")
     }
 }
 
@@ -53,8 +57,8 @@ task node1(type: JavaExec) {
   description = "Run Server for quote guessing game"
   main = 'Node'
   // default args
-  args 8001
-  args 1000 //initial money 
+  args port //?
+  args money //initial money 
 }
 
 task node2(type: JavaExec) {
@@ -63,7 +67,7 @@ task node2(type: JavaExec) {
   main = 'Node'
   // default args
   args 8002
-  args 2000 // money
+  args money // money
 }
 
 task node3(type: JavaExec) {
@@ -72,6 +76,6 @@ task node3(type: JavaExec) {
   main = 'Node'
   // default args
   args 8003
-  args 2000 // money
+  args money // money
 }
  
