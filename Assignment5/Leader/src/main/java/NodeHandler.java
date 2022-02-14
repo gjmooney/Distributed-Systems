@@ -1,4 +1,6 @@
 import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
@@ -7,11 +9,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class NodeHandler implements Runnable{
     private final AtomicBoolean keepRunning = new AtomicBoolean(true);
     private int _port;
-    private ArrayList<Integer> connectedNodes;
+    private ArrayList<InnerNode> connectedNodes;
 
     @Override
     public void run() {
-        System.out.println("Node handler started");
+        System.out.println("InnerNode handler started");
         _port = 8001;
         connectedNodes = new ArrayList<>();
         ServerSocket socket = null;
@@ -22,7 +24,9 @@ public class NodeHandler implements Runnable{
                 try {
                     nodeSocket = socket.accept();
                     System.out.println("node " + _port + " connected");
-                    connectedNodes.add(_port);
+                    InnerNode node =  new InnerNode(nodeSocket);
+                    //System.out.println("in handler" + connectedNodes.toString());
+                    connectedNodes.add(node);
                     _port++;
 
                 } catch (Exception e) {
@@ -31,6 +35,26 @@ public class NodeHandler implements Runnable{
             }
         } catch (IOException e) {
             e.printStackTrace();
+        }
+    }
+
+    public ArrayList<InnerNode> getConnectedNodes() {
+        return connectedNodes;
+    }
+
+    class InnerNode {
+        Socket socket;
+        ObjectInputStream in;
+        ObjectOutputStream out;
+        public InnerNode (Socket sock) {
+            this.socket = sock;
+            try {
+                this.in = new ObjectInputStream(sock.getInputStream());
+                this.out = new ObjectOutputStream(sock.getOutputStream());
+            } catch (IOException e) {
+                e.printStackTrace();
+                System.out.println("Error creating node in node handler");
+            }
         }
     }
 }

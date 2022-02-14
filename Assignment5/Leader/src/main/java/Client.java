@@ -19,8 +19,11 @@ public class Client {
             String message = "";
             if (type.equals("name")) {
                 message = (String) fromServer.get("message");
-            } else if (type.equals("greeting"))
-                message =(String) fromServer.get("message");
+            } else if (type.equals("greeting")) {
+                message = (String) fromServer.get("message");
+            } else if (type.equals("creditResponse")) {
+                message = "NOT BROK";
+            }
 
             System.out.println("Receiving");
             System.out.println(fromServer);
@@ -44,7 +47,7 @@ public class Client {
     public static JSONObject buildCreditRequest() {
         Scanner input = new Scanner(System.in);
         System.out.println("How much credit would you like?");
-        int amount = Integer.parseInt(input.nextLine());
+        double amount = Double.parseDouble(input.nextLine());
         JSONObject creditRequest = new JSONObject();
         creditRequest.put("type", "credit");
         creditRequest.put("amount", amount);
@@ -113,6 +116,8 @@ public class Client {
                             break;
                     }
                     out.writeObject(sendToServer.toString());
+                    System.out.println(receiveFromServer(in));
+
                 } catch (InputMismatchException e) {
                     input = new Scanner(System.in);
                     System.out.println("Please Enter a valid selection (1, 2, or 3");
