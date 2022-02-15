@@ -68,17 +68,16 @@ public class Leader extends Thread{
                 if (request.get("type").equals("name")) {
                     response = buildGreetingResponse(request);
                 } else if (request.get("type").equals("credit")) {
-                //need to send client and amount to all nodes
                     if (creditConsensus(request)) {
                         System.out.println("UPDATING LEDGER");
-                        updateLedger((int) request.get("amount"));
+                        updateLedger(Double.parseDouble((String) request.get("amount")));
                         System.out.println("SENDING RESPONSE");
+                        //TODO add sout to client based on this response
                         response = buildCreditResponse(request, true);
-                        //nodesSplitCredit((String) request.get("amount"));
+                        nodesSplitCredit((String) request.get("amount"));
+                    } else {
+                        response = buildCreditResponse(request, false);
                     }
-
-                    // divide amount amongst clients that said yes
-                    // they need to update thier lists
 
                 } else if (request.get("type").equals("payback")) {
 
@@ -91,21 +90,6 @@ public class Leader extends Thread{
         } catch (IOException | ClassNotFoundException e) {
             e.printStackTrace();
         }
-    }
-
-    public void updateLedger(int amount) {
-        if (connectedClients.has(clientName)) {
-            int oldAmount = (int) connectedClients.get(clientName);
-            int newAmount = oldAmount + amount;
-            connectedClients.put(clientName, newAmount);
-        } else {
-            System.out.println("This shouldn't happen");
-        }
-        System.out.println("LEDGER" + connectedClients.toString());
-    }
-
-    public void nodesSplitCredit(String amount) {
-
     }
 
     public JSONObject buildNameResponse() {
@@ -124,7 +108,7 @@ public class Leader extends Thread{
             message = "Welcome back " + name + " !";
             message += "\nYou current have $" +connectedClients.get(name) + " owed";
         } else {
-            int credit = 0; // initial amount of credit owed
+            double credit = 0.0; // initial amount of credit owed
             connectedClients.put(name, credit);
             message = "Thank you for joining us, " + name + "!";
         }
@@ -139,7 +123,7 @@ public class Leader extends Thread{
         int yesCount = 0;
         int noCount = 0;
         int count = 1;
-        yesList = new ArrayList<NodeHandler.InnerNode>();
+        yesList = new ArrayList<>();
         System.out.println("nodes in leader" + nodeHandler.getConnectedNodes());
         JSONObject creditRequestToNodes = new JSONObject();
         creditRequestToNodes.put("type", "credit");
@@ -150,20 +134,57 @@ public class Leader extends Thread{
                 System.out.println("CONSENSUS SENDING");
                 node.out.writeObject(creditRequestToNodes.toString());
                 System.out.println("CONSENSUS RECEIVING");
+                //TODO break out into vote counting method
                 JSONObject voteResponseFromNode = receive(node.in);
                 System.out.println("COUNTING " + count++ + " VOTE");
                 if (voteResponseFromNode.get("vote").equals("no")) {
                     noCount++;
                 } else {
                     yesCount++;
+                    yesList.add(node);
                 }
-                yesList.add(node);
             } catch (IOException e ) {
                 e.printStackTrace();
                 System.out.println("Error in credit consensus");
             }
         }
         return yesCount > noCount;
+    }
+
+    public void updateLedger(double amount) {
+        if (connectedClients.has(clientName)) {
+            double oldAmount = (double) connectedClients.get(clientName);
+                    //Double.parseDouble((String) connectedClients.get(clientName));
+                    //(int) connectedClients.get(clientName);
+            double newAmount = oldAmount + amount;
+            connectedClients.put(clientName, newAmount);
+        } else {
+            System.out.println("This shouldn't happen");
+        }
+        System.out.println("LEDGER" + connectedClients.toString());
+    }
+
+    public void nodesSplitCredit(String amount) {
+        //TODO this algorithm will need updating to handle numbers that don't split
+        // evenly
+        double nodeAmount = Double.parseDouble(amount);
+        nodeAmount = nodeAmount / yesList.size();
+        String strAmount = Double.toString(nodeAmount);
+        JSONObject json = new JSONObject();
+        json.put("type", "creditGrant");
+        json.put("amount", strAmount);
+        json.put("name", clientName);
+
+        for (NodeHandler.InnerNode node: yesList) {
+            try {
+                node.out.writeObject(json.toString());
+                JSONObject responseFromNode = receive(node.in);
+            } catch (IOException e ) {
+                e.printStackTrace();
+                System.out.println("Error in credit consensus");
+            }
+
+        }
     }
 
     public boolean countVotes(ArrayList<JSONObject> list) {

@@ -47,7 +47,8 @@ public class Client {
     public static JSONObject buildCreditRequest() {
         Scanner input = new Scanner(System.in);
         System.out.println("How much credit would you like?");
-        double amount = Double.parseDouble(input.nextLine());
+        //double amount = Double.parseDouble(input.nextLine());
+        String amount = input.nextLine();
         JSONObject creditRequest = new JSONObject();
         creditRequest.put("type", "credit");
         creditRequest.put("amount", amount);

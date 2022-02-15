@@ -53,12 +53,27 @@ public class Node {
     }
 
     public static String newClient(JSONObject clientRequest) {
-        int amountNeeded = ((int) clientRequest.get("amount"));
+        double amountNeeded = Double.parseDouble((String) clientRequest.get("amount")) * 1.5;
         if (money >= amountNeeded) {
             return "yes";
         } else {
             return "no";
         }
+    }
+
+    public static void updateClientLedger(JSONObject request) {
+        String clientName = (String) request.get("name");
+        double amount = Double.parseDouble((String) request.get("amount"));
+
+        if (clientList.has(clientName)) {
+            double oldAmount = (double) clientList.get("amount");
+            amount += oldAmount;
+            clientList.put(clientName, amount);
+        } else {
+            clientList.put(clientName, amount);
+        }
+        money =- amount;
+        System.out.println("NODE CLIENT LIST: " + clientList.toString());
     }
 
     public static void main(String[] args) {
@@ -97,6 +112,8 @@ public class Node {
 
                 if (request.get("type").equals("credit")) {
                     response = vote(request);
+                } else if (request.get("type").equals("creditGrant")) {
+                    updateClientLedger(request);
                 }
 
                 out.writeObject(response.toString());
