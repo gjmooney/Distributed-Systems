@@ -12,8 +12,8 @@ import java.util.ArrayList;
 public class Leader extends Thread{
     private Socket clientSocket = null;
     private ServerSocket serv = null;
-    private ObjectInputStream in = null;
-    private ObjectOutputStream out = null;
+    private ObjectInputStream clientIn = null;
+    private ObjectOutputStream clientOut = null;
     private int clientPort = 8000;
     private int id;
     private static ArrayList<Node> connectedNodes;
@@ -27,8 +27,8 @@ public class Leader extends Thread{
         this.clientSocket = sock;
         this.id = index;
         try {
-            in = new ObjectInputStream(clientSocket.getInputStream());
-            out = new ObjectOutputStream(clientSocket.getOutputStream());
+            clientIn = new ObjectInputStream(clientSocket.getInputStream());
+            clientOut = new ObjectOutputStream(clientSocket.getOutputStream());
         } catch (Exception e){
             System.out.println("Error in Server constructor: " + e);
         }
@@ -57,11 +57,11 @@ public class Leader extends Thread{
         JSONObject response = buildNameResponse();
         try {
             // send name
-            out.writeObject(response.toString());
+            clientOut.writeObject(response.toString());
 
             while (true) {
                 //get request from client
-                String jsonData = (String) in.readObject();
+                String jsonData = (String) clientIn.readObject();
                 JSONTokener jsonTokener = new JSONTokener(jsonData);
                 JSONObject request = new JSONObject(jsonTokener);
 
@@ -72,7 +72,6 @@ public class Leader extends Thread{
                         System.out.println("UPDATING LEDGER");
                         updateLedger(Double.parseDouble((String) request.get("amount")));
                         System.out.println("SENDING RESPONSE");
-                        //TODO add sout to client based on this response
                         response = buildCreditResponse(request, true);
                         nodesSplitCredit((String) request.get("amount"));
                     } else {
@@ -84,7 +83,7 @@ public class Leader extends Thread{
                 } else if (request.get("type").equals("exit")) {
 
                 }
-                out.writeObject(response.toString());
+                clientOut.writeObject(response.toString());
             }
 
         } catch (IOException | ClassNotFoundException e) {
@@ -148,7 +147,8 @@ public class Leader extends Thread{
                 System.out.println("Error in credit consensus");
             }
         }
-        return yesCount > noCount;
+        //return yesCount > noCount;
+        return yesCount != 0;
     }
 
     public void updateLedger(double amount) {

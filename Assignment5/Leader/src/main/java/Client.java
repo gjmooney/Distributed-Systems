@@ -10,31 +10,23 @@ import java.util.Scanner;
 
 public class Client {
 
-    public static String receiveFromServer(ObjectInputStream in) {
+    public static JSONObject receiveFromServer(ObjectInputStream in) {
         try {
             String jsonData = (String) in.readObject();
             JSONTokener jsonTokener = new JSONTokener(jsonData);
             JSONObject fromServer = new JSONObject(jsonTokener);
-            String type = (String) fromServer.get("type");
-            String message = "";
-            if (type.equals("name")) {
-                message = (String) fromServer.get("message");
-            } else if (type.equals("greeting")) {
-                message = (String) fromServer.get("message");
-            } else if (type.equals("creditResponse")) {
-                message = "NOT BROK";
-            }
+            return fromServer;
 
-            System.out.println("Receiving");
-            System.out.println(fromServer);
-            return message;
-
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (ClassNotFoundException e) {
+        } catch (IOException | ClassNotFoundException e) {
             e.printStackTrace();
         }
-        return "ERROR ERROR ERROR";
+        return error();
+    }
+
+    public static JSONObject error() {
+        JSONObject error = new JSONObject();
+        error.put("type", "error");
+        return error;
     }
 
     public static JSONObject buildNameRequest(String name) {
@@ -47,13 +39,38 @@ public class Client {
     public static JSONObject buildCreditRequest() {
         Scanner input = new Scanner(System.in);
         System.out.println("How much credit would you like?");
-        //double amount = Double.parseDouble(input.nextLine());
         String amount = input.nextLine();
         JSONObject creditRequest = new JSONObject();
         creditRequest.put("type", "credit");
         creditRequest.put("amount", amount);
 
         return creditRequest;
+    }
+
+    public static void handleResponse(JSONObject response) {
+        String type = (String) response.get("type");
+        String message = "";
+        if (type.equals("name")) {
+            message = (String) response.get("message");
+
+        } else if (type.equals("greeting")) {
+            message = (String) response.get("message");
+
+        } else if (type.equals("creditResponse")) {
+            if ((boolean) response.get("approved")) {
+                message = "Congratulations! You're credit request for $"
+                        + response.get("amount") + " has been approved!"
+                        + "\nYou now have a total of $" + response.get("credit")
+                        + "in credit";
+            } else {
+                message = "We're sorry, your request has been denied."
+                        + "\nYou currently have a total of $" + response.get("credit")
+                        + "in credit";
+            }
+        }
+        System.out.println(response);
+        System.out.println(message);
+
     }
 
     public static void main(String[] args) {
@@ -84,14 +101,14 @@ public class Client {
             String message;
             int choice;
             Scanner input = new Scanner(System.in);
-            message = receiveFromServer(in);
-            System.out.println(message);
+            JSONObject response = receiveFromServer(in);
+            handleResponse(response);
             String name = input.nextLine();
             JSONObject sendToServer = buildNameRequest(name);
             out.writeObject(sendToServer.toString());
             // get greeting from server
-            message = receiveFromServer(in);
-            System.out.println(message);
+            response = receiveFromServer(in);
+            handleResponse(response);
 
 
             do {
@@ -117,7 +134,10 @@ public class Client {
                             break;
                     }
                     out.writeObject(sendToServer.toString());
-                    System.out.println(receiveFromServer(in));
+                    response = receiveFromServer(in);
+
+                    System.out.println("checkpoint");
+                    handleResponse(response);
 
                 } catch (InputMismatchException e) {
                     input = new Scanner(System.in);

@@ -31,29 +31,39 @@ public class Node {
 
     public static JSONObject vote(JSONObject request) {
         String vote = "";
-        System.out.println("VOTING");
+        System.out.println("VOTe " + request.get("name"));
         if (clientList.has((String) request.get("name"))) {
-            returningClient();
+            System.out.println("returning client VOTING");
+
+            vote = returningClient(request);
         } else {
+            System.out.println("new client VOTING");
+
             vote = newClient(request);
         }
 
+        System.out.println("VOTE: " + vote);
         JSONObject responseToLeader = new JSONObject();
         responseToLeader.put("type", "vote");
         responseToLeader.put("vote", vote);
 
-        System.out.println("Receiving");
         System.out.println(request);
 
         return responseToLeader;
     }
 
-    public static void returningClient() {
-
+    public static String returningClient(JSONObject clientRequest) {
+        double amountNeeded = Double.parseDouble((String) clientRequest.get("amount"));
+        if (money >= amountNeeded) {
+            return "yes";
+        } else {
+            return "no";
+        }
     }
 
     public static String newClient(JSONObject clientRequest) {
         double amountNeeded = Double.parseDouble((String) clientRequest.get("amount")) * 1.5;
+        System.out.println("NEEDED " + amountNeeded + " HAS " + money);
         if (money >= amountNeeded) {
             return "yes";
         } else {
@@ -66,14 +76,16 @@ public class Node {
         double amount = Double.parseDouble((String) request.get("amount"));
 
         if (clientList.has(clientName)) {
-            double oldAmount = (double) clientList.get("amount");
+            double oldAmount = (double) clientList.get(clientName);
             amount += oldAmount;
             clientList.put(clientName, amount);
         } else {
             clientList.put(clientName, amount);
         }
-        money =- amount;
+        System.out.println("money " + money + " amount " + amount);
+        money -= amount;
         System.out.println("NODE CLIENT LIST: " + clientList.toString());
+        System.out.println("NODE HAS $" + money);
     }
 
     public static void main(String[] args) {
