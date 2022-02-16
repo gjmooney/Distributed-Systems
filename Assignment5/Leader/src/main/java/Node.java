@@ -71,7 +71,7 @@ public class Node {
         }
     }
 
-    public static void updateClientLedger(JSONObject request) {
+    public static void updateClientCredit(JSONObject request) {
         String clientName = (String) request.get("name");
         double amount = Double.parseDouble((String) request.get("amount"));
 
@@ -82,8 +82,43 @@ public class Node {
         } else {
             clientList.put(clientName, amount);
         }
-        System.out.println("money " + money + " amount " + amount);
+        System.out.println("CREDIT: money " + money + " amount " + amount);
         money -= amount;
+        System.out.println("NODE CLIENT LIST: " + clientList.toString());
+        System.out.println("NODE HAS $" + money);
+    }
+
+    public static JSONObject payback(JSONObject request) {
+        String client = (String) request.get("name");
+        JSONObject json = new JSONObject();
+        if (clientList.has(client)) {
+            double amountOwed = clientList.getDouble(client);
+            if (amountOwed != 0) {
+                json.put("owed", true);
+                json.put("amount", amountOwed);
+            } else {
+                json.put("owed", false);
+            }
+        } else {
+            json.put("owed", false);
+        }
+
+        return json;
+    }
+
+    public static void updateClientPayback(JSONObject request) {
+        String clientName = (String) request.get("name");
+        double amount = request.getDouble("paybackAmount");
+
+        if (clientList.has(clientName)) {
+            double owedAmount = (double) clientList.get(clientName);
+            owedAmount -= amount;
+            clientList.put(clientName, owedAmount);
+        } else {
+
+        }
+        System.out.println("PAYBACK: money " + money + " amount " + amount);
+        money += amount;
         System.out.println("NODE CLIENT LIST: " + clientList.toString());
         System.out.println("NODE HAS $" + money);
     }
@@ -125,7 +160,12 @@ public class Node {
                 if (request.get("type").equals("credit")) {
                     response = vote(request);
                 } else if (request.get("type").equals("creditGrant")) {
-                    updateClientLedger(request);
+                    updateClientCredit(request);
+                } else if (request.get("type").equals("payback")) {
+                    response = payback(request);
+                } else if (request.get("type").equals("nodePayback")) {
+                    updateClientPayback(request);
+
                 }
 
                 out.writeObject(response.toString());

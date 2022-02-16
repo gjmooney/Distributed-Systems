@@ -9,6 +9,8 @@ import java.util.InputMismatchException;
 import java.util.Scanner;
 
 public class Client {
+    private static double credit;
+
 
     public static JSONObject receiveFromServer(ObjectInputStream in) {
         try {
@@ -47,6 +49,18 @@ public class Client {
         return creditRequest;
     }
 
+    public static JSONObject buildPaybackRequest() {
+        Scanner input = new Scanner(System.in);
+        System.out.println("You currently owe $" + credit
+                            + "\nHow much would you like to pay back?");
+        String amount = input.nextLine();
+        JSONObject paybackRequest = new JSONObject();
+        paybackRequest.put("type", "payback");
+        paybackRequest.put("amount", amount);
+
+        return paybackRequest;
+    }
+
     public static void handleResponse(JSONObject response) {
         String type = (String) response.get("type");
         String message = "";
@@ -55,17 +69,30 @@ public class Client {
 
         } else if (type.equals("greeting")) {
             message = (String) response.get("message");
+            credit = response.getDouble("credit");
 
         } else if (type.equals("creditResponse")) {
             if ((boolean) response.get("approved")) {
+                credit = response.getDouble("credit");
                 message = "Congratulations! You're credit request for $"
                         + response.get("amount") + " has been approved!"
                         + "\nYou now have a total of $" + response.get("credit")
-                        + "in credit";
+                        + " in credit";
             } else {
                 message = "We're sorry, your request has been denied."
                         + "\nYou currently have a total of $" + response.get("credit")
                         + "in credit";
+            }
+        } else if (type.equals("paybackResponse")) {
+            if (response.getBoolean("approved")) {
+                credit = response.getDouble("credit");
+                message = "Congratulations! You have paid back $"
+                        + response.get("amount") + "!"
+                        + "\nYou now have a total of $" + response.get("credit")
+                        + " in credit";
+            } else  {
+                message = "Sorry, you can't pay back more than you owe"
+                        + "\nThat would be ridiculous!";
             }
         }
         System.out.println(response);
@@ -127,6 +154,7 @@ public class Client {
                             sendToServer = buildCreditRequest();
                             break;
                         case 2:
+                            sendToServer = buildPaybackRequest();
                             break;
                         case 3:
                             break;

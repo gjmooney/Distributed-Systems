@@ -20,7 +20,7 @@ public class Leader extends Thread{
     private static JSONObject connectedClients;
     private static int index;
     private static String clientName;
-    private ArrayList<NodeHandler.InnerNode> yesList;
+    private ArrayList<NodeHandler.InnerNode> workingList;
     static NodeHandler nodeHandler;
 
     public Leader(Socket sock, int index) {
@@ -74,11 +74,24 @@ public class Leader extends Thread{
                         System.out.println("SENDING RESPONSE");
                         response = buildCreditResponse(request, true);
                         nodesSplitCredit((String) request.get("amount"));
+                        workingList.clear();
                     } else {
                         response = buildCreditResponse(request, false);
+                        workingList.clear();
                     }
 
                 } else if (request.get("type").equals("payback")) {
+                    //check how much client owes
+                    double amount = request.getDouble("amount");
+                    if (amount > connectedClients.getDouble(clientName)) {
+                        response = buildPaybackResponse(request, false);
+                    } else {
+                        getOwedNodes();
+                        calcPaybackAmount(request);
+                        response = buildPaybackResponse(request, true);
+                        workingList.clear();
+                    }
+
 
                 } else if (request.get("type").equals("exit")) {
 
@@ -105,7 +118,7 @@ public class Leader extends Thread{
         clientName = name;
         if (connectedClients.has(name)) {
             message = "Welcome back " + name + " !";
-            message += "\nYou current have $" +connectedClients.get(name) + " owed";
+            message += "\nYou current have $" + connectedClients.get(name) + " owed";
         } else {
             double credit = 0.0; // initial amount of credit owed
             connectedClients.put(name, credit);
@@ -115,6 +128,7 @@ public class Leader extends Thread{
 
         response.put("type", "greeting");
         response.put("message", message);
+        response.put("credit", connectedClients.getDouble(name));
         return response;
     }
 
@@ -122,7 +136,7 @@ public class Leader extends Thread{
         int yesCount = 0;
         int noCount = 0;
         int count = 1;
-        yesList = new ArrayList<>();
+        workingList = new ArrayList<>();
         System.out.println("nodes in leader" + nodeHandler.getConnectedNodes());
         JSONObject creditRequestToNodes = new JSONObject();
         creditRequestToNodes.put("type", "credit");
@@ -140,7 +154,7 @@ public class Leader extends Thread{
                     noCount++;
                 } else {
                     yesCount++;
-                    yesList.add(node);
+                    workingList.add(node);
                 }
             } catch (IOException e ) {
                 e.printStackTrace();
@@ -168,14 +182,14 @@ public class Leader extends Thread{
         //TODO this algorithm will need updating to handle numbers that don't split
         // evenly
         double nodeAmount = Double.parseDouble(amount);
-        nodeAmount = nodeAmount / yesList.size();
+        nodeAmount = nodeAmount / workingList.size();
         String strAmount = Double.toString(nodeAmount);
         JSONObject json = new JSONObject();
         json.put("type", "creditGrant");
         json.put("amount", strAmount);
         json.put("name", clientName);
 
-        for (NodeHandler.InnerNode node: yesList) {
+        for (NodeHandler.InnerNode node: workingList) {
             try {
                 node.out.writeObject(json.toString());
                 JSONObject responseFromNode = receive(node.in);
@@ -208,6 +222,71 @@ public class Leader extends Thread{
     public JSONObject buildCreditResponse(JSONObject request, boolean approved) {
         JSONObject json = new JSONObject();
         json.put("type", "creditResponse");
+        json.put("amount", request.get("amount"));
+        json.put("credit", connectedClients.get(clientName));
+        if (approved) {
+            json.put("approved", true);
+        } else {
+            json.put("approved", false);
+        }
+
+        return json;
+    }
+
+    public void getOwedNodes() {
+        JSONObject paybackQuery = new JSONObject();
+        paybackQuery.put("type", "payback");
+        paybackQuery.put("name", clientName);
+        for (NodeHandler.InnerNode node : nodeHandler.getConnectedNodes()) {
+            try {
+                node.out.writeObject(paybackQuery.toString());
+                JSONObject responseFromNode = receive(node.in);
+                if (responseFromNode.getBoolean("owed")) {
+                    workingList.add(node);
+                    node.setAmountOwed(responseFromNode.getDouble("amount"));
+                } else {
+                    //node not owed dont do nuffin
+                }
+
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    public void calcPaybackAmount(JSONObject request) throws IOException {
+        double owed = Double.parseDouble((String) request.get("amount"));
+        double difference = 0.0;
+        JSONObject nodePayback = new JSONObject();
+
+        do {
+            int numNodes = workingList.size();
+            double perNode = owed / numNodes;
+
+
+            for (NodeHandler.InnerNode node : workingList) {
+                nodePayback.put("name", clientName);
+                nodePayback.put("type", "nodePayback");
+
+                if (perNode < node.getAmountOwed()) {
+                    nodePayback.put("paybackAmount", perNode);
+                } else {
+                    difference += perNode - node.getAmountOwed();
+                    nodePayback.put("paybackAmount", node.getAmountOwed());
+                }
+                node.out.writeObject(nodePayback.toString());
+            }
+            if (difference > 0) {
+                getOwedNodes();
+                owed = difference;
+                difference = 0.0;
+            }
+        } while (difference != 0.0);
+    }
+
+    public JSONObject buildPaybackResponse(JSONObject request, boolean approved) {
+        JSONObject json = new JSONObject();
+        json.put("type", "paybackResponse");
         json.put("amount", request.get("amount"));
         json.put("credit", connectedClients.get(clientName));
         if (approved) {

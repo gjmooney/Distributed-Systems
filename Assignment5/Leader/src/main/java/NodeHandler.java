@@ -46,6 +46,7 @@ public class NodeHandler implements Runnable{
         Socket socket;
         ObjectInputStream in;
         ObjectOutputStream out;
+        double amountOwed;
         public InnerNode (Socket sock) {
             this.socket = sock;
             try {
@@ -56,5 +57,15 @@ public class NodeHandler implements Runnable{
                 System.out.println("Error creating node in node handler");
             }
         }
+
+        public void setAmountOwed(double amount) {
+            this.amountOwed = amount;
+        }
+        public double getAmountOwed() {
+            return amountOwed;
+        }
+
+
+
     }
 }
