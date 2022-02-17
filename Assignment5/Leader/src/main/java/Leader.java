@@ -340,13 +340,17 @@ public class Leader extends Thread{
     }
 
     public void calcPaybackAmount(JSONObject request) throws IOException, ClassNotFoundException {
-        double owed = Double.parseDouble((String) request.get("amount"));
+        System.out.println("Starting calcPaybackAmount");
+        double payingBack = Double.parseDouble((String) request.get("amount"));
         double difference = 0.0;
         JSONObject nodePayback = new JSONObject();
 
         do {
             int numNodes = workingList.size();
-            double perNode = owed / numNodes;
+            double perNode = payingBack / numNodes;
+            System.out.println("\nClient: " +clientName + " owed: "
+                    + payingBack + " difference: " + difference
+                    + " numNodes: " + numNodes + " perNode: " + perNode);
 
 
             for (NodeHandler.InnerNode node : workingList) {
@@ -355,21 +359,26 @@ public class Leader extends Thread{
 
                 if (perNode < node.getAmountOwed()) {
                     nodePayback.put("paybackAmount", perNode);
+                    payingBack -= perNode;
                 } else {
                     difference += perNode - node.getAmountOwed();
                     nodePayback.put("paybackAmount", node.getAmountOwed());
+                    payingBack -= node.getAmountOwed();
                 }
                 System.out.println("\nSending to node "
                         + node.getPort() + " : " + nodePayback);
                 node.out.writeObject(nodePayback.toString());
                 JSONObject responseFromNode = receive(node.in);
             }
-            if (difference > 0) {
+            if (payingBack > 0) {
+                workingList.clear();
                 getOwedNodes();
-                owed = difference;
-                difference = 0.0;
+                //payingBack = difference;
+                //difference = 0.0;
             }
-        } while (difference != 0.0);
+        } while (payingBack != 0.0);
+        System.out.println("Ending calcPaybackAmount");
+
     }
 
     public JSONObject buildPaybackResponse(JSONObject request, boolean approved) {
