@@ -40,16 +40,19 @@ public class Leader extends Thread{
         return error;
     }
 
-    public JSONObject receive(ObjectInputStream in) {
-        try {
+    public JSONObject receive(ObjectInputStream in) throws IOException, ClassNotFoundException {
+        String jsonData = (String) in.readObject();
+        JSONTokener jsonTokener = new JSONTokener(jsonData);
+        return new JSONObject(jsonTokener);
+        /*try {
             String jsonData = (String) in.readObject();
             JSONTokener jsonTokener = new JSONTokener(jsonData);
             return new JSONObject(jsonTokener);
         } catch (IOException | ClassNotFoundException e) {
             e.printStackTrace();
-        }
+        }*/
 
-        return error();
+        //return error();
     }
 
     public void run() {
@@ -70,7 +73,7 @@ public class Leader extends Thread{
                 } else if (request.get("type").equals("credit")) {
                     if (creditConsensus(request)) {
                         System.out.println("UPDATING LEDGER");
-                        updateLedger(Double.parseDouble((String) request.get("amount")));
+                        updateLedger(Double.parseDouble((String) request.get("amount")), true);
                         System.out.println("SENDING RESPONSE");
                         response = buildCreditResponse(request, true);
                         nodesSplitCredit((String) request.get("amount"));
@@ -88,8 +91,10 @@ public class Leader extends Thread{
                     } else {
                         getOwedNodes();
                         calcPaybackAmount(request);
+                        updateLedger(Double.parseDouble((String) request.get("amount")), false);
                         response = buildPaybackResponse(request, true);
                         workingList.clear();
+
                     }
 
 
@@ -100,7 +105,17 @@ public class Leader extends Thread{
             }
 
         } catch (IOException | ClassNotFoundException e) {
-            e.printStackTrace();
+            //e.printStackTrace();
+            System.out.println("Client " + clientName + " disconnected");
+        } finally {
+            try {
+                clientIn.close();
+                clientOut.close();
+                clientSocket.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
         }
     }
 
@@ -150,6 +165,7 @@ public class Leader extends Thread{
                 //TODO break out into vote counting method
                 JSONObject voteResponseFromNode = receive(node.in);
                 System.out.println("COUNTING " + count++ + " VOTE");
+                System.out.println("156: node response: " + voteResponseFromNode);
                 if (voteResponseFromNode.get("vote").equals("no")) {
                     noCount++;
                 } else {
@@ -159,18 +175,29 @@ public class Leader extends Thread{
             } catch (IOException e ) {
                 e.printStackTrace();
                 System.out.println("Error in credit consensus");
+                try {
+                    int port = node.shutDownNode();
+                    System.out.println("Shutting down node on port " + port);
+                } catch (IOException ioe) {
+                    ioe.printStackTrace();
+                }
+            } catch (ClassNotFoundException e) {
+                e.printStackTrace();
             }
         }
         //return yesCount > noCount;
         return yesCount != 0;
     }
 
-    public void updateLedger(double amount) {
+    public void updateLedger(double amount, boolean credit) {
         if (connectedClients.has(clientName)) {
             double oldAmount = (double) connectedClients.get(clientName);
-                    //Double.parseDouble((String) connectedClients.get(clientName));
-                    //(int) connectedClients.get(clientName);
-            double newAmount = oldAmount + amount;
+            double newAmount;
+            if (credit) {
+                newAmount = oldAmount + amount;
+            } else {
+                newAmount = oldAmount - amount;
+            }
             connectedClients.put(clientName, newAmount);
         } else {
             System.out.println("This shouldn't happen");
@@ -193,7 +220,7 @@ public class Leader extends Thread{
             try {
                 node.out.writeObject(json.toString());
                 JSONObject responseFromNode = receive(node.in);
-            } catch (IOException e ) {
+            } catch (IOException | ClassNotFoundException e ) {
                 e.printStackTrace();
                 System.out.println("Error in credit consensus");
             }
@@ -241,6 +268,7 @@ public class Leader extends Thread{
             try {
                 node.out.writeObject(paybackQuery.toString());
                 JSONObject responseFromNode = receive(node.in);
+                System.out.println("254: owed: " + responseFromNode);
                 if (responseFromNode.getBoolean("owed")) {
                     workingList.add(node);
                     node.setAmountOwed(responseFromNode.getDouble("amount"));
@@ -248,13 +276,13 @@ public class Leader extends Thread{
                     //node not owed dont do nuffin
                 }
 
-            } catch (IOException e) {
+            } catch (IOException | ClassNotFoundException e) {
                 e.printStackTrace();
             }
         }
     }
 
-    public void calcPaybackAmount(JSONObject request) throws IOException {
+    public void calcPaybackAmount(JSONObject request) throws IOException, ClassNotFoundException {
         double owed = Double.parseDouble((String) request.get("amount"));
         double difference = 0.0;
         JSONObject nodePayback = new JSONObject();
@@ -275,6 +303,7 @@ public class Leader extends Thread{
                     nodePayback.put("paybackAmount", node.getAmountOwed());
                 }
                 node.out.writeObject(nodePayback.toString());
+                JSONObject responseFromNode = receive(node.in);
             }
             if (difference > 0) {
                 getOwedNodes();

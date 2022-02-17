@@ -155,7 +155,9 @@ public class Node {
 
             while (true) {
                 JSONObject response = new JSONObject();
+                System.out.println("158: Listening for leader");
                 request = receiveFromLeader(in);
+                System.out.println("160: Got request from leader ");
 
                 if (request.get("type").equals("credit")) {
                     response = vote(request);
@@ -167,8 +169,9 @@ public class Node {
                     updateClientPayback(request);
 
                 }
-
+                System.out.println("SENDING " + response);
                 out.writeObject(response.toString());
+                System.out.println("SENT");
             }
 
         } catch (IOException e) {

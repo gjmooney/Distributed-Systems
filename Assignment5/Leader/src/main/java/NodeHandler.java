@@ -24,7 +24,7 @@ public class NodeHandler implements Runnable{
                 try {
                     nodeSocket = socket.accept();
                     System.out.println("node " + _port + " connected");
-                    InnerNode node =  new InnerNode(nodeSocket);
+                    InnerNode node =  new InnerNode(nodeSocket, _port);
                     //System.out.println("in handler" + connectedNodes.toString());
                     connectedNodes.add(node);
                     _port++;
@@ -46,9 +46,11 @@ public class NodeHandler implements Runnable{
         Socket socket;
         ObjectInputStream in;
         ObjectOutputStream out;
+        int port;
         double amountOwed;
-        public InnerNode (Socket sock) {
+        public InnerNode (Socket sock, int port) {
             this.socket = sock;
+            this.port = port;
             try {
                 this.in = new ObjectInputStream(sock.getInputStream());
                 this.out = new ObjectOutputStream(sock.getOutputStream());
@@ -63,6 +65,21 @@ public class NodeHandler implements Runnable{
         }
         public double getAmountOwed() {
             return amountOwed;
+        }
+
+        public int shutDownNode() throws IOException {
+            in.close();
+            out.close();
+            socket.close();
+            for (InnerNode node : connectedNodes) {
+                if (node.port == this.port) {
+                    connectedNodes.remove(this);
+                    System.out.println("removing node on port " + port);
+                }
+            }
+            return port;
+
+
         }
 
 
