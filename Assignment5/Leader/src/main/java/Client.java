@@ -20,7 +20,9 @@ public class Client {
             return fromServer;
 
         } catch (IOException | ClassNotFoundException e) {
-            e.printStackTrace();
+            //e.printStackTrace();
+            System.out.println("Can't communicate with leader\nShutting down...");
+            System.exit(0);
         }
         return error();
     }
@@ -81,7 +83,7 @@ public class Client {
             } else {
                 message = "We're sorry, your request has been denied."
                         + "\nYou currently have a total of $" + response.get("credit")
-                        + "in credit";
+                        + " in credit";
             }
         } else if (type.equals("paybackResponse")) {
             if (response.getBoolean("approved")) {
@@ -157,8 +159,14 @@ public class Client {
                             sendToServer = buildPaybackRequest();
                             break;
                         case 3:
+                            System.out.println("Bye bye!");
+                            in.close();
+                            out.close();
+                            leaderSocket.close();
+                            System.exit(0);
                             break;
                         default:
+                            System.out.println("How did this happen?");
                             break;
                     }
                     out.writeObject(sendToServer.toString());

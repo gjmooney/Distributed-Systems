@@ -17,7 +17,9 @@ public class Node {
             JSONObject fromLeader = new JSONObject(jsonTokener);
             return fromLeader;
         } catch (IOException | ClassNotFoundException e) {
-            e.printStackTrace();
+            //e.printStackTrace();
+            System.out.println("Lost connection to leader\nShutting down node...");
+            System.exit(0);
         }
         return error();
     }

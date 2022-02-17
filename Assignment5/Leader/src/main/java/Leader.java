@@ -207,7 +207,7 @@ public class Leader extends Thread{
         int noCount = 0;
         int count = 1;
         workingList = new ArrayList<>();
-        System.out.println("nodes in leader" + nodeHandler.getConnectedNodes());
+        System.out.println("nodes in leader " + nodeHandler.getConnectedNodes());
         JSONObject creditRequestToNodes = new JSONObject();
         creditRequestToNodes.put("type", "credit");
         creditRequestToNodes.put("name", clientName);
@@ -246,7 +246,7 @@ public class Leader extends Thread{
 
     public void updateLedger(double amount, boolean credit) {
         if (clientLedger.has(clientName)) {
-            double oldAmount = (double) clientLedger.get(clientName);
+            double oldAmount = clientLedger.getDouble(clientName);
             double newAmount;
             if (credit) {
                 newAmount = oldAmount + amount;
