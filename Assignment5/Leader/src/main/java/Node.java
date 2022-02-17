@@ -1,14 +1,14 @@
+import org.json.JSONException;
 import org.json.JSONObject;
 import org.json.JSONTokener;
 
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
+import java.io.*;
 import java.net.Socket;
 
 public class Node {
     private static JSONObject clientList;
     private static double money;
+    private static int port;
 
     public static JSONObject receiveFromLeader(ObjectInputStream in) {
         try {
@@ -22,6 +22,60 @@ public class Node {
             System.exit(0);
         }
         return error();
+    }
+
+    public static JSONObject readLedger(String filename) {
+        BufferedReader leaderboardReader = null;
+        JSONTokener tokener;
+        try {
+            File file = new File(filename);
+
+            leaderboardReader = new BufferedReader(new FileReader(file));
+            tokener = new JSONTokener(leaderboardReader);
+            return new JSONObject(tokener);
+        } catch (FileNotFoundException e) {
+            System.out.println("No ledger yet");
+            return new JSONObject();
+        } catch (JSONException e) {
+            System.out.println("Ledger file is blank");
+            return new JSONObject();
+        }
+        finally {
+            if (leaderboardReader != null) {
+                try {
+                    leaderboardReader.close();
+                }
+                catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+
+    public static void saveLedger(String filename) {
+        File file = new File(filename);
+        FileWriter fileWriter = null;
+        try {
+            if (file.createNewFile()) {
+                System.out.println("New ledger created");
+            }
+            clientList.put(String.valueOf(port), money);
+            fileWriter = new FileWriter(filename);
+            fileWriter.write(clientList.toString());
+        } catch (IOException e) {
+            e.printStackTrace();
+            System.out.println("Problem saving client ledger");
+        } finally {
+            try {
+                if (fileWriter != null) {
+                    fileWriter.flush();
+                    fileWriter.close();
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+                System.out.println("problem closing ledger file");
+            }
+        }
     }
 
     public static JSONObject error() {
@@ -78,16 +132,16 @@ public class Node {
         double amount = Double.parseDouble((String) request.get("amount"));
 
         if (clientList.has(clientName)) {
-            double oldAmount = (double) clientList.get(clientName);
+            double oldAmount = clientList.getDouble(clientName);
             amount += oldAmount;
             clientList.put(clientName, amount);
         } else {
             clientList.put(clientName, amount);
         }
-        System.out.println("CREDIT: money " + money + " amount " + amount);
+        //System.out.println("CREDIT: money " + money + " amount " + amount);
         money -= amount;
-        System.out.println("NODE CLIENT LIST: " + clientList.toString());
-        System.out.println("NODE HAS $" + money);
+        //System.out.println("NODE CLIENT LIST: " + clientList.toString());
+        //System.out.println("NODE HAS $" + money);
     }
 
     public static JSONObject payback(JSONObject request) {
@@ -119,18 +173,19 @@ public class Node {
         } else {
 
         }
-        System.out.println("PAYBACK: money " + money + " amount " + amount);
+        //System.out.println("PAYBACK: money " + money + " amount " + amount);
         money += amount;
-        System.out.println("NODE CLIENT LIST: " + clientList.toString());
-        System.out.println("NODE HAS $" + money);
+        //System.out.println("NODE CLIENT LIST: " + clientList.toString());
+        //System.out.println("NODE HAS $" + money);
     }
 
     public static void main(String[] args) {
         Socket leaderSocket = null;
         ObjectOutputStream out = null;
         ObjectInputStream in = null;
-        int port = 8000; // default
-        money = 1000;
+        port = 8000; // default
+        money = 1000; // default
+        double argMoney = -1;
         String host = "localhost";
         clientList = new JSONObject();
 
@@ -140,11 +195,25 @@ public class Node {
         }
         try {
             port = Integer.parseInt(args[0]);
-            money = Double.parseDouble(args[1]);
+            argMoney = Double.parseDouble(args[1]);
         } catch (NumberFormatException nfe) {
             System.out.println("[Port|Money] must be integer");
             System.exit(2);
         }
+
+        //build file name for saving/loading ledger
+        String filename = "src/main/resources/ledgerNode" + port + ".txt";
+        clientList = readLedger(filename);
+
+        // Node money is set to argument amount if there is one
+        // Else sets money to saved amount, if there is one
+        // else uses default amount of 1000
+        if (argMoney != -1) {
+            money = argMoney;
+        } else if (clientList.has(String.valueOf(port))) {
+            money = clientList.getDouble(String.valueOf(port));
+        }
+
         System.out.println("NODE PRT: " + port);
         System.out.println("NODE MONEY " + money);
 
@@ -157,23 +226,24 @@ public class Node {
 
             while (true) {
                 JSONObject response = new JSONObject();
-                System.out.println("158: Listening for leader");
                 request = receiveFromLeader(in);
-                System.out.println("160: Got request from leader ");
+                System.out.println("\nGot request from leader: " + request);
 
                 if (request.get("type").equals("credit")) {
                     response = vote(request);
                 } else if (request.get("type").equals("creditGrant")) {
                     updateClientCredit(request);
+                    saveLedger(filename);
                 } else if (request.get("type").equals("payback")) {
                     response = payback(request);
                 } else if (request.get("type").equals("nodePayback")) {
                     updateClientPayback(request);
+                    saveLedger(filename);
 
                 }
-                System.out.println("SENDING " + response);
+                System.out.println("\nSending to leader: " + response);
                 out.writeObject(response.toString());
-                System.out.println("SENT");
+                System.out.println("\nCurrent client list: " + clientList);
             }
 
         } catch (IOException e) {

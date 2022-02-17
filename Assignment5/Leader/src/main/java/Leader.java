@@ -43,7 +43,7 @@ public class Leader extends Thread{
         BufferedReader leaderboardReader = null;
         JSONTokener tokener;
         try {
-            File file = new File("src/main/resources/ledger.txt");
+            File file = new File("src/main/resources/ledgerLeader.txt");
 
             leaderboardReader = new BufferedReader(new FileReader(file));
             tokener = new JSONTokener(leaderboardReader);
@@ -68,7 +68,7 @@ public class Leader extends Thread{
     }
 
     public void saveLedger() {
-        File file = new File("src/main/resources/ledger.txt");
+        File file = new File("src/main/resources/ledgerLeader.txt");
         FileWriter fileWriter = null;
         try {
             if (file.createNewFile()) {
@@ -76,7 +76,7 @@ public class Leader extends Thread{
             }
 
 
-            fileWriter = new FileWriter("src/main/resources/ledger.txt");
+            fileWriter = new FileWriter("src/main/resources/ledgerLeader.txt");
             fileWriter.write(clientLedger.toString());
         } catch (IOException e) {
             e.printStackTrace();
@@ -123,13 +123,12 @@ public class Leader extends Thread{
                 JSONTokener jsonTokener = new JSONTokener(jsonData);
                 JSONObject request = new JSONObject(jsonTokener);
 
+                System.out.println("From client " + clientName + " : " + request);
                 if (request.get("type").equals("name")) {
                     response = buildGreetingResponse(request);
                 } else if (request.get("type").equals("credit")) {
                     if (creditConsensus(request)) {
-                        System.out.println("UPDATING LEDGER");
                         updateLedger(Double.parseDouble((String) request.get("amount")), true);
-                        System.out.println("SENDING RESPONSE");
                         response = buildCreditResponse(request, true);
                         nodesSplitCredit((String) request.get("amount"));
                         workingList.clear();
@@ -151,11 +150,8 @@ public class Leader extends Thread{
                         workingList.clear();
 
                     }
-
-
-                } else if (request.get("type").equals("exit")) {
-
                 }
+                System.out.println("\nSending to client " + clientName + " : " + response);
                 clientOut.writeObject(response.toString());
             }
 
@@ -207,20 +203,20 @@ public class Leader extends Thread{
         int noCount = 0;
         int count = 1;
         workingList = new ArrayList<>();
-        System.out.println("nodes in leader " + nodeHandler.getConnectedNodes());
         JSONObject creditRequestToNodes = new JSONObject();
         creditRequestToNodes.put("type", "credit");
         creditRequestToNodes.put("name", clientName);
         creditRequestToNodes.put("amount", request.get("amount"));
         for (NodeHandler.InnerNode node : nodeHandler.getConnectedNodes()) {
             try {
-                System.out.println("CONSENSUS SENDING");
+                System.out.println("\nConsensus -- Sending to "
+                        + node.getPort() + " : " + creditRequestToNodes);
                 node.out.writeObject(creditRequestToNodes.toString());
-                System.out.println("CONSENSUS RECEIVING");
                 //TODO break out into vote counting method
                 JSONObject voteResponseFromNode = receive(node.in);
-                System.out.println("COUNTING " + count++ + " VOTE");
-                System.out.println("156: node response: " + voteResponseFromNode);
+                System.out.println("Counting " + count++ + " votes");
+                System.out.println("\nResponse from node "
+                        + node.getPort() + " : " + voteResponseFromNode);
                 if (voteResponseFromNode.get("vote").equals("no")) {
                     noCount++;
                 } else {
@@ -257,7 +253,7 @@ public class Leader extends Thread{
         } else {
             System.out.println("This shouldn't happen");
         }
-        System.out.println("LEDGER" + clientLedger.toString());
+        System.out.println("Current ledger: " + clientLedger.toString());
         saveLedger();
     }
 
@@ -275,6 +271,8 @@ public class Leader extends Thread{
         for (NodeHandler.InnerNode node: workingList) {
             try {
                 node.out.writeObject(json.toString());
+                System.out.println("\nSending to node "
+                        + node.getPort() + " : " + json);
                 JSONObject responseFromNode = receive(node.in);
             } catch (IOException | ClassNotFoundException e ) {
                 e.printStackTrace();
@@ -322,9 +320,12 @@ public class Leader extends Thread{
         paybackQuery.put("name", clientName);
         for (NodeHandler.InnerNode node : nodeHandler.getConnectedNodes()) {
             try {
+                System.out.println("\nSending to node "
+                    + node.getPort() + " : " + paybackQuery);
                 node.out.writeObject(paybackQuery.toString());
                 JSONObject responseFromNode = receive(node.in);
-                System.out.println("254: owed: " + responseFromNode);
+                System.out.println("\nResponse from node "
+                        + node.getPort() + " : " + responseFromNode);
                 if (responseFromNode.getBoolean("owed")) {
                     workingList.add(node);
                     node.setAmountOwed(responseFromNode.getDouble("amount"));
@@ -358,6 +359,8 @@ public class Leader extends Thread{
                     difference += perNode - node.getAmountOwed();
                     nodePayback.put("paybackAmount", node.getAmountOwed());
                 }
+                System.out.println("\nSending to node "
+                        + node.getPort() + " : " + nodePayback);
                 node.out.writeObject(nodePayback.toString());
                 JSONObject responseFromNode = receive(node.in);
             }

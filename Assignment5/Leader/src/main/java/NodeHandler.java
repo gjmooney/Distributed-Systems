@@ -67,6 +67,10 @@ public class NodeHandler implements Runnable{
             return amountOwed;
         }
 
+        public int getPort() {
+            return port;
+        }
+
         public int shutDownNode() throws IOException {
             in.close();
             out.close();
