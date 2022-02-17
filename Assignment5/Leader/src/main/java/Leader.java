@@ -1,10 +1,9 @@
 
+import org.json.JSONException;
 import org.json.JSONObject;
 import org.json.JSONTokener;
 
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
+import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
@@ -17,7 +16,7 @@ public class Leader extends Thread{
     private int clientPort = 8000;
     private int id;
     private static ArrayList<Node> connectedNodes;
-    private static JSONObject connectedClients;
+    private static JSONObject clientLedger;
     private static int index;
     private static String clientName;
     private ArrayList<NodeHandler.InnerNode> workingList;
@@ -40,6 +39,61 @@ public class Leader extends Thread{
         return error;
     }
 
+    public JSONObject readLedger() {
+        BufferedReader leaderboardReader = null;
+        JSONTokener tokener;
+        try {
+            File file = new File("src/main/resources/ledger.txt");
+
+            leaderboardReader = new BufferedReader(new FileReader(file));
+            tokener = new JSONTokener(leaderboardReader);
+            return new JSONObject(tokener);
+        } catch (FileNotFoundException e) {
+            System.out.println("No ledger yet");
+            return new JSONObject();
+        } catch (JSONException e) {
+            System.out.println("Ledger file is blank");
+            return new JSONObject();
+        }
+        finally {
+            if (leaderboardReader != null) {
+                try {
+                    leaderboardReader.close();
+                }
+                catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+
+    public void saveLedger() {
+        File file = new File("src/main/resources/ledger.txt");
+        FileWriter fileWriter = null;
+        try {
+            if (file.createNewFile()) {
+                System.out.println("New ledger created");
+            }
+
+
+            fileWriter = new FileWriter("src/main/resources/ledger.txt");
+            fileWriter.write(clientLedger.toString());
+        } catch (IOException e) {
+            e.printStackTrace();
+            System.out.println("Problem saving client ledger");
+        } finally {
+            try {
+                if (fileWriter != null) {
+                    fileWriter.flush();
+                    fileWriter.close();
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+                System.out.println("problem closing ledger file");
+            }
+        }
+    }
+
     public JSONObject receive(ObjectInputStream in) throws IOException, ClassNotFoundException {
         String jsonData = (String) in.readObject();
         JSONTokener jsonTokener = new JSONTokener(jsonData);
@@ -56,6 +110,7 @@ public class Leader extends Thread{
     }
 
     public void run() {
+        clientLedger = readLedger();
         System.out.println("PROGRESS");
         JSONObject response = buildNameResponse();
         try {
@@ -86,7 +141,7 @@ public class Leader extends Thread{
                 } else if (request.get("type").equals("payback")) {
                     //check how much client owes
                     double amount = request.getDouble("amount");
-                    if (amount > connectedClients.getDouble(clientName)) {
+                    if (amount > clientLedger.getDouble(clientName)) {
                         response = buildPaybackResponse(request, false);
                     } else {
                         getOwedNodes();
@@ -131,19 +186,19 @@ public class Leader extends Thread{
         String message;
         String name = (String) request.get("name");
         clientName = name;
-        if (connectedClients.has(name)) {
+        if (clientLedger.has(name)) {
             message = "Welcome back " + name + " !";
-            message += "\nYou current have $" + connectedClients.get(name) + " owed";
+            message += "\nYou current have $" + clientLedger.get(name) + " owed";
         } else {
             double credit = 0.0; // initial amount of credit owed
-            connectedClients.put(name, credit);
+            clientLedger.put(name, credit);
             message = "Thank you for joining us, " + name + "!";
         }
-        message += "\nYour current credit amount is: $" + connectedClients.get(name);
+        message += "\nYour current credit amount is: $" + clientLedger.get(name);
 
         response.put("type", "greeting");
         response.put("message", message);
-        response.put("credit", connectedClients.getDouble(name));
+        response.put("credit", clientLedger.getDouble(name));
         return response;
     }
 
@@ -190,19 +245,20 @@ public class Leader extends Thread{
     }
 
     public void updateLedger(double amount, boolean credit) {
-        if (connectedClients.has(clientName)) {
-            double oldAmount = (double) connectedClients.get(clientName);
+        if (clientLedger.has(clientName)) {
+            double oldAmount = (double) clientLedger.get(clientName);
             double newAmount;
             if (credit) {
                 newAmount = oldAmount + amount;
             } else {
                 newAmount = oldAmount - amount;
             }
-            connectedClients.put(clientName, newAmount);
+            clientLedger.put(clientName, newAmount);
         } else {
             System.out.println("This shouldn't happen");
         }
-        System.out.println("LEDGER" + connectedClients.toString());
+        System.out.println("LEDGER" + clientLedger.toString());
+        saveLedger();
     }
 
     public void nodesSplitCredit(String amount) {
@@ -250,7 +306,7 @@ public class Leader extends Thread{
         JSONObject json = new JSONObject();
         json.put("type", "creditResponse");
         json.put("amount", request.get("amount"));
-        json.put("credit", connectedClients.get(clientName));
+        json.put("credit", clientLedger.get(clientName));
         if (approved) {
             json.put("approved", true);
         } else {
@@ -317,7 +373,7 @@ public class Leader extends Thread{
         JSONObject json = new JSONObject();
         json.put("type", "paybackResponse");
         json.put("amount", request.get("amount"));
-        json.put("credit", connectedClients.get(clientName));
+        json.put("credit", clientLedger.get(clientName));
         if (approved) {
             json.put("approved", true);
         } else {
@@ -334,7 +390,7 @@ public class Leader extends Thread{
 
         Socket clientSocket = null;
         connectedNodes = new ArrayList<>();
-        connectedClients = new JSONObject();
+        clientLedger = new JSONObject();
         index = 0;
 
         try {
