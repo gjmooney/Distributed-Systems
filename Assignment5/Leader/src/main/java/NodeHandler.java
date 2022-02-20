@@ -4,6 +4,7 @@ import java.io.ObjectOutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class NodeHandler implements Runnable{
@@ -72,15 +73,27 @@ public class NodeHandler implements Runnable{
         }
 
         public int shutDownNode() throws IOException {
+            System.out.println("PRE NODE LIST: " + connectedNodes);
             in.close();
             out.close();
             socket.close();
-            for (InnerNode node : connectedNodes) {
+            for (int i = 0; i < connectedNodes.size(); i++) {
+                if (connectedNodes.get(i).port == this.port) {
+                    connectedNodes.remove(this);
+                    i--;
+                    System.out.println("removing node on port " + port);
+                }
+            }
+            /*Iterator<InnerNode> it = connectedNodes.iterator();
+            while (it.hasNext()) {
+                InnerNode node = it.next();
                 if (node.port == this.port) {
                     connectedNodes.remove(this);
                     System.out.println("removing node on port " + port);
                 }
-            }
+            }*/
+            System.out.println("POST NODE LIST: " + connectedNodes);
+
             return port;
 
 

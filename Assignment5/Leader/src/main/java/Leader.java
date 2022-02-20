@@ -7,6 +7,8 @@ import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 public class Leader extends Thread{
     private Socket clientSocket = null;
@@ -18,7 +20,7 @@ public class Leader extends Thread{
     private static ArrayList<Node> connectedNodes;
     private static JSONObject clientLedger;
     private static int index;
-    private static String clientName;
+    private String clientName;
     private ArrayList<NodeHandler.InnerNode> workingList;
     static NodeHandler nodeHandler;
 
@@ -110,6 +112,7 @@ public class Leader extends Thread{
     }
 
     public void run() {
+        workingList = new ArrayList<>();
         clientLedger = readLedger();
         System.out.println("PROGRESS");
         JSONObject response = buildNameResponse();
@@ -151,6 +154,7 @@ public class Leader extends Thread{
 
                     }
                 }
+                response.put("client", clientName);
                 System.out.println("\nSending to client " + clientName + " : " + response);
                 clientOut.writeObject(response.toString());
             }
@@ -202,7 +206,6 @@ public class Leader extends Thread{
         int yesCount = 0;
         int noCount = 0;
         int count = 1;
-        workingList = new ArrayList<>();
         JSONObject creditRequestToNodes = new JSONObject();
         creditRequestToNodes.put("type", "credit");
         creditRequestToNodes.put("name", clientName);
@@ -236,8 +239,8 @@ public class Leader extends Thread{
                 e.printStackTrace();
             }
         }
-        //return yesCount > noCount;
-        return yesCount != 0;
+        return yesCount > noCount;
+        //return yesCount != 0;
     }
 
     public void updateLedger(double amount, boolean credit) {
@@ -314,11 +317,12 @@ public class Leader extends Thread{
         return json;
     }
 
-    public void getOwedNodes() {
+    public void getOwedNodes() throws IOException {
         JSONObject paybackQuery = new JSONObject();
         paybackQuery.put("type", "payback");
         paybackQuery.put("name", clientName);
-        for (NodeHandler.InnerNode node : nodeHandler.getConnectedNodes()) {
+        List<NodeHandler.InnerNode> list = new CopyOnWriteArrayList<>(nodeHandler.getConnectedNodes());
+        for (NodeHandler.InnerNode node : list) {
             try {
                 System.out.println("\nSending to node "
                     + node.getPort() + " : " + paybackQuery);
@@ -334,24 +338,27 @@ public class Leader extends Thread{
                 }
 
             } catch (IOException | ClassNotFoundException e) {
+                //TODO just make it an error response. please try again later or something
+                // we are unable to process your request. yea good
+                System.out.println("CAtCH");
+                workingList.clear();
                 e.printStackTrace();
+                node.shutDownNode();
+                getOwedNodes();
+
             }
         }
     }
 
     public void calcPaybackAmount(JSONObject request) throws IOException, ClassNotFoundException {
-        System.out.println("Starting calcPaybackAmount");
         double payingBack = Double.parseDouble((String) request.get("amount"));
-        double difference = 0.0;
         JSONObject nodePayback = new JSONObject();
+        double amountUsed = 0.0;
 
         do {
+            amountUsed = 0.0;
             int numNodes = workingList.size();
             double perNode = payingBack / numNodes;
-            System.out.println("\nClient: " +clientName + " owed: "
-                    + payingBack + " difference: " + difference
-                    + " numNodes: " + numNodes + " perNode: " + perNode);
-
 
             for (NodeHandler.InnerNode node : workingList) {
                 nodePayback.put("name", clientName);
@@ -359,10 +366,11 @@ public class Leader extends Thread{
 
                 if (perNode < node.getAmountOwed()) {
                     nodePayback.put("paybackAmount", perNode);
+                    amountUsed += perNode;
                     payingBack -= perNode;
                 } else {
-                    difference += perNode - node.getAmountOwed();
                     nodePayback.put("paybackAmount", node.getAmountOwed());
+                    amountUsed += node.getAmountOwed();
                     payingBack -= node.getAmountOwed();
                 }
                 System.out.println("\nSending to node "
@@ -373,12 +381,8 @@ public class Leader extends Thread{
             if (payingBack > 0) {
                 workingList.clear();
                 getOwedNodes();
-                //payingBack = difference;
-                //difference = 0.0;
             }
-        } while (payingBack != 0.0);
-        System.out.println("Ending calcPaybackAmount");
-
+        } while (amountUsed != 0.0);
     }
 
     public JSONObject buildPaybackResponse(JSONObject request, boolean approved) {

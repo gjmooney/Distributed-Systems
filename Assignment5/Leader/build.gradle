@@ -57,7 +57,7 @@ task node1(type: JavaExec) {
   description = "Run Server for quote guessing game"
   main = 'Node'
   // default args
-  args port //?
+  args 8001 //?
   args money //initial money 
 }
 

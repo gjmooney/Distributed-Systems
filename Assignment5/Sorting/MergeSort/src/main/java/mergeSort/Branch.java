@@ -98,7 +98,7 @@ public class Branch extends Node {
   }
 
   public static void main(String[] args) {
-    new Branch(Integer.valueOf(args[0]), Integer.valueOf(args[1]), Integer.valueOf(args[2]), "localhost", "localhost").run();
+    new Branch(Integer.valueOf(args[0]), Integer.valueOf(args[1]), Integer.valueOf(args[2]), "18.209.167.132", "18.209.167.132").run();
   }
 
 

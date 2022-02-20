@@ -53,7 +53,13 @@ public class MergeSort {
   }
   
   public static void Test(int port, String host) {
-    int[] a = { 5, 1, 6, 2, 3, 4, 10,634,34,23,653, 23,2 ,6};
+    //int[] a = { 5, 1, 6, 2, 3, 4, 10,634,34,23,653, 23,2 ,6};
+    int[] a = new int[100];
+    Random rand = new Random();
+
+    for (int i = 0; i < a.length; i++) {
+      a[i] = rand.nextInt();
+    }
     JSONObject response = NetworkUtils.send(host, port, init(a));
     
     System.out.println(response);

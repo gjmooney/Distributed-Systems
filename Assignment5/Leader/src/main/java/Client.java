@@ -20,7 +20,7 @@ public class Client {
             return fromServer;
 
         } catch (IOException | ClassNotFoundException e) {
-            //e.printStackTrace();
+            e.printStackTrace();
             System.out.println("Can't communicate with leader\nShutting down...");
             System.exit(0);
         }
@@ -97,7 +97,7 @@ public class Client {
                         + "\nThat would be ridiculous!";
             }
         }
-        System.out.println(response);
+        //System.out.println(response);
         System.out.println(message);
 
     }
@@ -172,7 +172,6 @@ public class Client {
                     out.writeObject(sendToServer.toString());
                     response = receiveFromServer(in);
 
-                    System.out.println("checkpoint");
                     handleResponse(response);
 
                 } catch (InputMismatchException e) {

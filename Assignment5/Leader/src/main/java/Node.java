@@ -131,7 +131,7 @@ public class Node {
         String clientName = (String) request.get("name");
         double amount = Double.parseDouble((String) request.get("amount"));
 
-        System.out.println("update credit -- amount: " + amount + " money " + money);
+        //System.out.println("update credit -- amount: " + amount + " money " + money);
         if (clientList.has(clientName)) {
             double oldAmount = clientList.getDouble(clientName);
             amount += oldAmount;
@@ -140,9 +140,9 @@ public class Node {
             clientList.put(clientName, amount);
         }
         //System.out.println("CREDIT: money " + money + " amount " + amount);
-        System.out.println("update credit -- before maff " + money);
+        //System.out.println("update credit -- before maff " + money);
         money -= amount;
-        System.out.println("update credit -- new money " + money);
+        //System.out.println("update credit -- new money " + money);
 
         //System.out.println("NODE CLIENT LIST: " + clientList.toString());
         //System.out.println("NODE HAS $" + money);
@@ -218,7 +218,7 @@ public class Node {
             money = clientList.getDouble(String.valueOf(port));
         }
 
-        System.out.println("NODE PRT: " + port);
+        System.out.println("NODE PORT: " + port);
         System.out.println("NODE MONEY " + money);
 
         try {
