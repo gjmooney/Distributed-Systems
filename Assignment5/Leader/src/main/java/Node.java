@@ -3,7 +3,10 @@ import org.json.JSONObject;
 import org.json.JSONTokener;
 
 import java.io.*;
+import java.math.RoundingMode;
 import java.net.Socket;
+import java.text.DecimalFormat;
+import java.util.Iterator;
 
 public class Node {
     private static JSONObject clientList;
@@ -87,14 +90,9 @@ public class Node {
 
     public static JSONObject vote(JSONObject request) {
         String vote = "";
-        System.out.println("VOTe " + request.get("name"));
         if (clientList.has((String) request.get("name"))) {
-            System.out.println("returning client VOTING");
-
             vote = returningClient(request);
         } else {
-            System.out.println("new client VOTING");
-
             vote = newClient(request);
         }
 
@@ -102,8 +100,6 @@ public class Node {
         JSONObject responseToLeader = new JSONObject();
         responseToLeader.put("type", "vote");
         responseToLeader.put("vote", vote);
-
-        System.out.println(request);
 
         return responseToLeader;
     }
@@ -119,7 +115,6 @@ public class Node {
 
     public static String newClient(JSONObject clientRequest) {
         double amountNeeded = Double.parseDouble((String) clientRequest.get("amount")) * 1.5;
-        System.out.println("NEEDED " + amountNeeded + " HAS " + money);
         if (money >= amountNeeded) {
             return "yes";
         } else {
@@ -129,9 +124,8 @@ public class Node {
 
     public static void updateClientCredit(JSONObject request) {
         String clientName = (String) request.get("name");
-        double amount = Double.parseDouble((String) request.get("amount"));
+        double amount = request.getDouble("amount");
 
-        //System.out.println("update credit -- amount: " + amount + " money " + money);
         if (clientList.has(clientName)) {
             double oldAmount = clientList.getDouble(clientName);
             amount += oldAmount;
@@ -139,13 +133,11 @@ public class Node {
         } else {
             clientList.put(clientName, amount);
         }
-        //System.out.println("CREDIT: money " + money + " amount " + amount);
-        //System.out.println("update credit -- before maff " + money);
-        money -= amount;
-        //System.out.println("update credit -- new money " + money);
+        DecimalFormat df = new DecimalFormat("#.##");
+        df.setRoundingMode(RoundingMode.DOWN);
 
-        //System.out.println("NODE CLIENT LIST: " + clientList.toString());
-        //System.out.println("NODE HAS $" + money);
+        String temp = df.format(money - amount);
+        money = Double.parseDouble(temp);
     }
 
     public static JSONObject payback(JSONObject request) {
@@ -170,17 +162,36 @@ public class Node {
         String clientName = (String) request.get("name");
         double amount = request.getDouble("paybackAmount");
 
-        if (clientList.has(clientName)) {
-            double owedAmount = (double) clientList.get(clientName);
-            owedAmount -= amount;
-            clientList.put(clientName, owedAmount);
-        } else {
+        DecimalFormat df = new DecimalFormat("#.##");
+        df.setRoundingMode(RoundingMode.DOWN);
 
+        if (clientList.has(clientName)) {
+            double owedAmount = clientList.getDouble(clientName);
+            String temp = df.format(owedAmount - amount);
+            owedAmount = Double.parseDouble(temp);
+            clientList.put(clientName, owedAmount);
         }
-        //System.out.println("PAYBACK: money " + money + " amount " + amount);
         money += amount;
-        //System.out.println("NODE CLIENT LIST: " + clientList.toString());
-        //System.out.println("NODE HAS $" + money);
+    }
+
+    public static JSONObject sync() {
+        return clientList;
+    }
+
+    public static void resync(JSONObject request) {
+        clientList = null;
+        clientList = new JSONObject();
+        clientList.put(String.valueOf(port), money);
+
+        Iterator<String> keys = request.keys();
+        while (keys.hasNext()) {
+            String client = keys.next();
+            if (!client.equals("type")) {
+                clientList.put(client, request.getDouble(client));
+            }
+        }
+
+        System.out.println("New client list: " + clientList);
     }
 
     public static void main(String[] args) {
@@ -193,7 +204,7 @@ public class Node {
         String host = "localhost";
         clientList = new JSONObject();
 
-        if (args.length != 2) {
+        if (args.length > 2) {
             System.out.println("Expected arguments: <port(int)> <money(int)>");
             System.exit(1);
         }
@@ -218,8 +229,8 @@ public class Node {
             money = clientList.getDouble(String.valueOf(port));
         }
 
-        System.out.println("NODE PORT: " + port);
-        System.out.println("NODE MONEY " + money);
+        System.out.println("Node started on port: " + port);
+        System.out.println("Node started with $" + money);
 
         try {
             leaderSocket = new Socket(host, port);
@@ -235,15 +246,24 @@ public class Node {
 
                 if (request.get("type").equals("credit")) {
                     response = vote(request);
+
                 } else if (request.get("type").equals("creditGrant")) {
                     updateClientCredit(request);
                     saveLedger(filename);
+
                 } else if (request.get("type").equals("payback")) {
                     response = payback(request);
+
                 } else if (request.get("type").equals("nodePayback")) {
                     updateClientPayback(request);
                     saveLedger(filename);
 
+                } else if (request.get("type").equals("sync")) {
+                    response = sync();
+
+                } else if (request.get("type").equals("resync")) {
+                    resync(request);
+                    saveLedger(filename);
                 }
                 System.out.println("\nSending to leader: " + response);
                 out.writeObject(response.toString());

@@ -3,11 +3,16 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import org.json.JSONTokener;
 
+import java.awt.image.Kernel;
 import java.io.*;
+import java.math.RoundingMode;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 public class Leader extends Thread{
@@ -100,21 +105,98 @@ public class Leader extends Thread{
         String jsonData = (String) in.readObject();
         JSONTokener jsonTokener = new JSONTokener(jsonData);
         return new JSONObject(jsonTokener);
-        /*try {
-            String jsonData = (String) in.readObject();
-            JSONTokener jsonTokener = new JSONTokener(jsonData);
-            return new JSONObject(jsonTokener);
-        } catch (IOException | ClassNotFoundException e) {
-            e.printStackTrace();
-        }*/
+    }
 
-        //return error();
+    public void syncWithNodes() {
+        double nodeOwed = 0.0;
+        JSONObject syncLedger = new JSONObject();
+
+        // This gets the ledger from each node and iterates through it,
+        // adding the clients and their amount to the syncLedger
+        if (nodeHandler.getConnectedNodes().size() > 0) {
+            for (NodeHandler.InnerNode node : nodeHandler.getConnectedNodes()) {
+                JSONObject syncRequest = new JSONObject();
+                syncRequest.put("type", "sync");
+                try {
+                    node.out.writeObject(syncRequest.toString());
+                    JSONObject response = receive(node.in);
+                    Iterator<String> keys = response.keys();
+                    while (keys.hasNext()) {
+                        String client = keys.next();
+                        if (!Objects.equals(client, String.valueOf(node.getPort()))) {
+                            if (syncLedger.has(client)) {
+                                double newTotal = syncLedger.getDouble(client) + response.getDouble(client);
+                                syncLedger.put(client, newTotal);
+                            } else {
+                                syncLedger.put(client, response.getDouble(client));
+                            }
+                        }
+
+                    }
+                } catch (IOException | ClassNotFoundException e) {
+                    //e.printStackTrace();
+                    System.out.println("BRUUK");
+                }
+            }
+
+            // This compares the sync ledger with the leaders ledger
+            Iterator<String> syncKeys = clientLedger.keys();
+            while (syncKeys.hasNext()) {
+                String syncClient = syncKeys.next();
+                if (syncLedger.has(syncClient)) {
+                    if (syncLedger.getDouble(syncClient) != clientLedger.getDouble(syncClient)) {
+                        reSync();
+                    }
+                } else {
+                    reSync();
+                }
+            }
+        }
+    }
+
+    public void reSync() {
+        System.out.println("\nSTARTING RESYNC\n");
+        JSONObject resync = new JSONObject();
+        resync.put("type", "resync");
+        List<NodeHandler.InnerNode> nodes = new CopyOnWriteArrayList<>(nodeHandler.getConnectedNodes());
+        System.out.println("CONNECTED NODES: "+ nodeHandler.getConnectedNodes());
+
+        Iterator<String> syncKeys = clientLedger.keys();
+        while (syncKeys.hasNext()) {
+            String syncClient = syncKeys.next();
+            //double amountPerNode = clientLedger.getDouble(syncClient) / nodes.size();
+            double amountPerNode = formatDouble(clientLedger.getDouble(syncClient), nodes.size());
+            resync.put(syncClient, amountPerNode);
+            System.out.println("ADDING TO RESYNC: " + syncClient + " : " + amountPerNode);
+        }
+
+        for (NodeHandler.InnerNode node: nodes) {
+            try {
+                node.out.writeObject(resync.toString());
+                System.out.println("SYNCING: " + resync);
+                System.out.println("\nResyncing to node "
+                        + node.getPort() + " : " + resync);
+                JSONObject responseFromNode = receive(node.in);
+            } catch (IOException | ClassNotFoundException e ) {
+                //e.printStackTrace();
+                System.out.println("Error in resync");
+                node.shutDownNode();
+            }
+
+        }
+
+    }
+
+    public double formatDouble(double amount, int nodes) {
+        DecimalFormat df = new DecimalFormat("#.##");
+        df.setRoundingMode(RoundingMode.DOWN);
+        double amountD = amount / nodes;
+        return Double.parseDouble(df.format(amountD));
     }
 
     public void run() {
         workingList = new ArrayList<>();
         clientLedger = readLedger();
-        System.out.println("PROGRESS");
         JSONObject response = buildNameResponse();
         try {
             // send name
@@ -126,14 +208,20 @@ public class Leader extends Thread{
                 JSONTokener jsonTokener = new JSONTokener(jsonData);
                 JSONObject request = new JSONObject(jsonTokener);
 
-                System.out.println("From client " + clientName + " : " + request);
+                syncWithNodes();
+
+                //System.out.println("From client " + clientName + " : " + request);
                 if (request.get("type").equals("name")) {
                     response = buildGreetingResponse(request);
+
                 } else if (request.get("type").equals("credit")) {
                     if (creditConsensus(request)) {
-                        updateLedger(Double.parseDouble((String) request.get("amount")), true);
+                        double amount = Double.parseDouble((String) request.get("amount"));
+                        updateLedger(amount, true);
                         response = buildCreditResponse(request, true);
-                        nodesSplitCredit((String) request.get("amount"));
+                        //nodesSplitCredit((String) request.get("amount"));
+                        nodesSplitCredit(amount);
+
                         workingList.clear();
                     } else {
                         response = buildCreditResponse(request, false);
@@ -187,9 +275,12 @@ public class Leader extends Thread{
         String name = (String) request.get("name");
         clientName = name;
         if (clientLedger.has(name)) {
+            System.out.println("1Adding " + name + " as " + clientName);
             message = "Welcome back " + name + " !";
             message += "\nYou current have $" + clientLedger.get(name) + " owed";
         } else {
+            System.out.println("2Adding " + name + " as " + clientName);
+
             double credit = 0.0; // initial amount of credit owed
             clientLedger.put(name, credit);
             message = "Thank you for joining us, " + name + "!";
@@ -210,12 +301,13 @@ public class Leader extends Thread{
         creditRequestToNodes.put("type", "credit");
         creditRequestToNodes.put("name", clientName);
         creditRequestToNodes.put("amount", request.get("amount"));
-        for (NodeHandler.InnerNode node : nodeHandler.getConnectedNodes()) {
+
+        List<NodeHandler.InnerNode> list = new CopyOnWriteArrayList<>(nodeHandler.getConnectedNodes());
+        for (NodeHandler.InnerNode node : list) {
             try {
                 System.out.println("\nConsensus -- Sending to "
                         + node.getPort() + " : " + creditRequestToNodes);
                 node.out.writeObject(creditRequestToNodes.toString());
-                //TODO break out into vote counting method
                 JSONObject voteResponseFromNode = receive(node.in);
                 System.out.println("Counting " + count++ + " votes");
                 System.out.println("\nResponse from node "
@@ -227,23 +319,19 @@ public class Leader extends Thread{
                     workingList.add(node);
                 }
             } catch (IOException e ) {
-                e.printStackTrace();
+                //e.printStackTrace();
                 System.out.println("Error in credit consensus");
-                try {
-                    int port = node.shutDownNode();
-                    System.out.println("Shutting down node on port " + port);
-                } catch (IOException ioe) {
-                    ioe.printStackTrace();
-                }
+                node.shutDownNode();
+                creditConsensus(request);
             } catch (ClassNotFoundException e) {
-                e.printStackTrace();
+                //e.printStackTrace();
+                System.out.println("Another Error in credit consensus");
             }
         }
         return yesCount > noCount;
-        //return yesCount != 0;
     }
 
-    public void updateLedger(double amount, boolean credit) {
+    synchronized public void updateLedger(double amount, boolean credit) {
         if (clientLedger.has(clientName)) {
             double oldAmount = clientLedger.getDouble(clientName);
             double newAmount;
@@ -260,15 +348,11 @@ public class Leader extends Thread{
         saveLedger();
     }
 
-    public void nodesSplitCredit(String amount) {
-        //TODO this algorithm will need updating to handle numbers that don't split
-        // evenly
-        double nodeAmount = Double.parseDouble(amount);
-        nodeAmount = nodeAmount / workingList.size();
-        String strAmount = Double.toString(nodeAmount);
+    public void nodesSplitCredit(double amount) {
+        double nodeAmount = formatDouble(amount, workingList.size());
         JSONObject json = new JSONObject();
         json.put("type", "creditGrant");
-        json.put("amount", strAmount);
+        json.put("amount", nodeAmount);
         json.put("name", clientName);
 
         for (NodeHandler.InnerNode node: workingList) {
@@ -278,29 +362,11 @@ public class Leader extends Thread{
                         + node.getPort() + " : " + json);
                 JSONObject responseFromNode = receive(node.in);
             } catch (IOException | ClassNotFoundException e ) {
-                e.printStackTrace();
-                System.out.println("Error in credit consensus");
+                //e.printStackTrace();
+                System.out.println("Error in nodeSplitCredit");
             }
 
         }
-    }
-
-    public boolean countVotes(ArrayList<JSONObject> list) {
-        int yesCount = 0;
-        int noCount = 0;
-        for (JSONObject response : list) {
-            if (response.get("type").equals("error")) {
-                System.out.println("BEEP BOOP BROKE");
-                break;
-            } else {
-                if (response.get("vote").equals("no")) {
-                    noCount++;
-                } else {
-                    yesCount++;
-                }
-            }
-        }
-        return yesCount > noCount;
     }
 
     public JSONObject buildCreditResponse(JSONObject request, boolean approved) {
@@ -317,7 +383,7 @@ public class Leader extends Thread{
         return json;
     }
 
-    public void getOwedNodes() throws IOException {
+    public void getOwedNodes() {
         JSONObject paybackQuery = new JSONObject();
         paybackQuery.put("type", "payback");
         paybackQuery.put("name", clientName);
@@ -333,16 +399,12 @@ public class Leader extends Thread{
                 if (responseFromNode.getBoolean("owed")) {
                     workingList.add(node);
                     node.setAmountOwed(responseFromNode.getDouble("amount"));
-                } else {
-                    //node not owed dont do nuffin
                 }
 
             } catch (IOException | ClassNotFoundException e) {
-                //TODO just make it an error response. please try again later or something
-                // we are unable to process your request. yea good
-                System.out.println("CAtCH");
+                System.out.println("Error caught in getOwedNodes. Cleaning up crashed node");
                 workingList.clear();
-                e.printStackTrace();
+                //e.printStackTrace();
                 node.shutDownNode();
                 getOwedNodes();
 
@@ -354,11 +416,17 @@ public class Leader extends Thread{
         double payingBack = Double.parseDouble((String) request.get("amount"));
         JSONObject nodePayback = new JSONObject();
         double amountUsed = 0.0;
+        //DecimalFormat df = new DecimalFormat("#.##");
+        //df.setRoundingMode(RoundingMode.DOWN);
 
         do {
             amountUsed = 0.0;
             int numNodes = workingList.size();
-            double perNode = payingBack / numNodes;
+            double perNode = 0.0;
+            //double perNodeD = payingBack / numNodes;
+            if (workingList.size() != 0) {
+                perNode = formatDouble(payingBack, numNodes);
+            }
 
             for (NodeHandler.InnerNode node : workingList) {
                 nodePayback.put("name", clientName);
@@ -433,7 +501,7 @@ public class Leader extends Thread{
             }
 
         } catch (Exception e) {
-            e.printStackTrace();
+            //e.printStackTrace();
         } finally {
             if (clientSocket != null) {
                 System.out.println("Server closing socket");

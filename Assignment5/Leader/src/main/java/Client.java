@@ -20,7 +20,7 @@ public class Client {
             return fromServer;
 
         } catch (IOException | ClassNotFoundException e) {
-            e.printStackTrace();
+            //e.printStackTrace();
             System.out.println("Can't communicate with leader\nShutting down...");
             System.exit(0);
         }
