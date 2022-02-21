@@ -60,7 +60,8 @@ Multiple clients can be started.
 - Multiple clients can interact with the leader 
 - New nodes can join the network seamlessly 
 
-### Protocol
+### Protocol  
+```
 Leader <---> Client
     - Requests
         - type : name - Client sends name to leader 
@@ -70,7 +71,7 @@ Leader <---> Client
             - type : greeting - Leader sends greeting to client 
             - credit - Amount owed by client 
             - message - Welcome message for client
-                
+            
         - type : credit - Client requests credit
         - Fields
             - amount - Amount of credit client wants 
@@ -129,5 +130,5 @@ Leader <---> Node
             - name - Name of client on ledger
             - amount - Amount owed to node by client
             * Note: Leader generates ledger as JSON object and simply sends the entire ledger, name : amount are key : value pairs
-                
+```        
            
