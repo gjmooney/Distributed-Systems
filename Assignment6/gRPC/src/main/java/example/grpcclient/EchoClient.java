@@ -3,6 +3,9 @@ package example.grpcclient;
 import io.grpc.Channel;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
+
+import java.util.InputMismatchException;
+import java.util.Scanner;
 import java.util.concurrent.TimeUnit;
 import service.*;
 import test.TestProtobuf;
@@ -18,6 +21,7 @@ public class EchoClient {
   private final EchoGrpc.EchoBlockingStub blockingStub;
   private final JokeGrpc.JokeBlockingStub blockingStub2;
   private final RegistryGrpc.RegistryBlockingStub blockingStub3;
+  private final RockPaperScissorsGrpc.RockPaperScissorsBlockingStub blockingStub4;
 
   /** Construct client for accessing server using the existing channel. */
   public EchoClient(Channel channel, Channel regChannel) {
@@ -30,6 +34,7 @@ public class EchoClient {
     blockingStub = EchoGrpc.newBlockingStub(channel);
     blockingStub2 = JokeGrpc.newBlockingStub(channel);
     blockingStub3 = RegistryGrpc.newBlockingStub(regChannel);
+    blockingStub4 = RockPaperScissorsGrpc.newBlockingStub(channel);
   }
 
   public void askServerToParrot(String message) {
@@ -109,6 +114,75 @@ public class EchoClient {
     }
   }
 
+  public void startRps() {
+    Scanner input = new Scanner(System.in);
+
+    System.out.println("Soooo, what's your name?");
+    String name = input.nextLine();
+
+    do {
+      System.out.println("GREETINGS " + name);
+      System.out.println("WELCOME TO ROCK, PAPER, SCISSORS!!!");
+      System.out.println("CHOOSE YOUR MEANS OF DESTRUCTION!!!");
+      System.out.println("1. ROCK!");
+      System.out.println("2. PAPER!");
+      System.out.println("3. SCISSORS!");
+      System.out.println();
+
+      int choice = 0;
+      PlayReq.Played weapon = null;
+      try {
+        choice = input.nextInt();
+        switch (choice) {
+          case 1:
+            weapon = PlayReq.Played.ROCK;
+            break;
+          case 2:
+            //request.setPlay(PlayReq.Played.PAPER);
+            weapon = PlayReq.Played.PAPER;
+            break;
+          case 3:
+            //request.setPlay(PlayReq.Played.SCISSORS);
+            weapon = PlayReq.Played.SCISSORS;
+            break;
+          default:
+            System.out.println("YOU FOOL!!!");
+            break;
+        }
+
+        if (choice == 1 || choice == 2 || choice == 3) {
+          PlayReq request = PlayReq.newBuilder()
+                  .setName(name)
+                  .setPlay(weapon)
+                  .build();
+
+          PlayRes response;
+          response = blockingStub4.play(request);
+        }
+
+      } catch (InputMismatchException e) {
+        System.out.println("CHOOSE WISELY!!!");
+        input = new Scanner(System.in);
+      }
+    } while (true);
+
+    //request needs a name and r, p, or s (called play)
+    //PlayReq request = PlayReq.newBuilder()
+
+  }
+
+  public int rpsMenu() {
+    do {
+      System.out.println("GREETINGS " + name);
+      System.out.println("WELCOME TO ROCK, PAPER, SCISSORS!!!");
+      System.out.println("CHOOSE YOUR MEANS OF DESTRUCTION!!!");
+      System.out.println("1. ROCK!");
+      System.out.println("2. PAPER!");
+      System.out.println("3. SCISSORS!");
+      System.out.println();
+    } while (true);
+  }
+
   public static void main(String[] args) throws Exception {
     if (args.length != 5) {
       System.out
@@ -144,72 +218,44 @@ public class EchoClient {
     ManagedChannel regChannel = ManagedChannelBuilder.forTarget(regTarget).usePlaintext().build();
     try {
 
-      // ##############################################################################
-      // ## Assume we know the port here from the service node it is basically set through Gradle
-      // here.
-      // In your version you should first contact the registry to check which services
-      // are available and what the port
-      // etc is.
-
-      /**
-       * Your client should start off with 
-       * 1. contacting the Registry to check for the available services
-       * 2. List the services in the terminal and the client can
-       *    choose one (preferably through numbering) 
-       * 3. Based on what the client chooses
-       *    the terminal should ask for input, eg. a new sentence, a sorting array or
-       *    whatever the request needs 
-       * 4. The request should be sent to one of the
-       *    available services (client should call the registry again and ask for a
-       *    Server providing the chosen service) should send the request to this service and
-       *    return the response in a good way to the client
-       * 
-       * You should make sure your client does not crash in case the service node
-       * crashes or went offline.
-       */
-
-      // Just doing some hard coded calls to the service node without using the
-      // registry
-      // create client
       EchoClient client = new EchoClient(channel, regChannel);
 
-      // call the parrot service on the server
-      client.askServerToParrot(message);
+      do {
+        System.out.println("What would you like to do?");
+        System.out.println("1. Hear a joke");
+        System.out.println("2. Play Rock, Paper, Scissors");
+        System.out.println("3. Play with timers");
+        System.out.println("4. Quit");
+        System.out.println("Please enter a valid selection.");
+        System.out.println();
 
-      // ask the user for input how many jokes the user wants
-      BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
+        Scanner input = new Scanner(System.in);
+        int choice = 0;
+        try {
+          choice = input.nextInt();
 
-      // Reading data using readLine
-      System.out.println("How many jokes would you like?"); // NO ERROR handling of wrong input here.
-      String num = reader.readLine();
-
-      // calling the joked service from the server with num from user input
-      client.askForJokes(Integer.valueOf(num));
-
-      // adding a joke to the server
-      client.setJoke("I made a pencil with two erasers. It was pointless.");
-
-      // showing 6 joked
-      client.askForJokes(Integer.valueOf(6));
-
-      // ############### Contacting the registry just so you see how it can be done
-
-      // Comment these last Service calls while in Activity 1 Task 1, they are not needed and wil throw issues without the Registry running
-      // get thread's services
-      client.getServices();
-
-      // get parrot
-      client.findServer("services.Echo/parrot");
-      
-      // get all setJoke
-      client.findServers("services.Joke/setJoke");
-
-      // get getJoke
-      client.findServer("services.Joke/getJoke");
-
-      // does not exist
-      client.findServer("random");
-
+          switch (choice) {
+            case 1:
+              client.askForJokes(1);
+              break;
+            case 2:
+              client.startRps();
+              break;
+            case 3:
+              break;
+            case 4:
+              System.out.println("BUH BYE");
+              System.exit(0);
+              break;
+            default:
+              System.out.println("The switch broke");
+              break;
+          }
+        } catch (InputMismatchException e) {
+          input = new Scanner(System.in);
+          System.out.println("Please enter a valid choice");
+        }
+      } while (true);
 
     } finally {
       // ManagedChannels use resources like threads and TCP connections. To prevent

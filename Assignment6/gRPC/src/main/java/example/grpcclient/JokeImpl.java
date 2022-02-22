@@ -20,7 +20,7 @@ import buffers.RequestProtos.Request.RequestType;
 import buffers.ResponseProtos.Response;
 
 
-// Implement the joke service. It has two sevices getJokes and setJoke
+// Implement the joke service. It has two services getJokes and setJoke
 class JokeImpl extends JokeGrpc.JokeImplBase {
     
     // having a global set of jokes
