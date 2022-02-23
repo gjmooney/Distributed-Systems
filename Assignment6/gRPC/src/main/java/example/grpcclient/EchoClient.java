@@ -8,11 +8,6 @@ import java.util.InputMismatchException;
 import java.util.Scanner;
 import java.util.concurrent.TimeUnit;
 import service.*;
-import test.TestProtobuf;
-
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
 
 /**
  * Client that requests `parrot` method from the `EchoServer`.
@@ -22,6 +17,7 @@ public class EchoClient {
   private final JokeGrpc.JokeBlockingStub blockingStub2;
   private final RegistryGrpc.RegistryBlockingStub blockingStub3;
   private final RockPaperScissorsGrpc.RockPaperScissorsBlockingStub blockingStub4;
+  private final TimerGrpc.TimerBlockingStub blockingStub5;
 
   /** Construct client for accessing server using the existing channel. */
   public EchoClient(Channel channel, Channel regChannel) {
@@ -35,6 +31,7 @@ public class EchoClient {
     blockingStub2 = JokeGrpc.newBlockingStub(channel);
     blockingStub3 = RegistryGrpc.newBlockingStub(regChannel);
     blockingStub4 = RockPaperScissorsGrpc.newBlockingStub(channel);
+    blockingStub5 = TimerGrpc.newBlockingStub(channel);
   }
 
   public void askServerToParrot(String message) {
@@ -121,6 +118,8 @@ public class EchoClient {
     System.out.println("Soooo, what's your name?");
     String name = input.nextLine();
     System.out.println("\nGREETINGS " + name);
+    System.out.println("\nWELCOME TO ROCK, PAPER, SCISSORS!!!");
+
 
     do {
       int choice = rpsMenu();
@@ -153,7 +152,7 @@ public class EchoClient {
         playRequest(name, weapon);
 
       } else if (choice == 4) {
-        lbRequest();
+        leaderboardRequest();
       }
 
 
@@ -180,7 +179,7 @@ public class EchoClient {
     }
   }
 
-  public void lbRequest() {
+  public void leaderboardRequest() {
     Empty lbRequest = Empty.newBuilder().build();
 
     try {
@@ -212,7 +211,6 @@ public class EchoClient {
     int menuNum = 1;
 
     do {
-      System.out.println("WELCOME TO ROCK, PAPER, SCISSORS!!!");
       System.out.println("CHOOSE YOUR MEANS OF DESTRUCTION!!!");
       System.out.println(menuNum + ". ROCK!");
       System.out.println(++menuNum + ". PAPER!");
@@ -223,7 +221,7 @@ public class EchoClient {
 
       try {
         choice = input.nextInt();
-        if (choice >= 1 && choice <= 5) {
+        if (choice >= 1 && choice <= menuNum) {
           done = true;
 
         } else {
@@ -232,6 +230,163 @@ public class EchoClient {
 
       } catch (InputMismatchException e) {
         System.out.println("YOU FOOL!!!");
+        input = new Scanner(System.in);
+      }
+    } while (!done);
+
+    return choice;
+  }
+
+  public void startTimers() {
+
+    boolean keepGoing = true;
+
+    System.out.println("\nHello!");
+    System.out.println("\nWelcome to Timer World");
+
+    do {
+      int choice = timerMenu();
+
+      switch (choice) {
+        case 1:
+          startTimer();
+          break;
+        case 2:
+          checkTimer();
+          break;
+        case 3:
+          stopTimer();
+          break;
+        case 4:
+          listTimers();
+          break;
+        case 5:
+          System.out.println("Goodbye!");
+          keepGoing = false;
+          break;
+        default:
+          System.out.println("Timer world has been attacked");
+          break;
+      }
+
+      if (choice == 1 || choice == 2 || choice == 3) {
+
+      }
+
+
+    } while (keepGoing);
+  }
+
+  public void startTimer() {
+    Scanner input = new Scanner(System.in);
+    System.out.println("\nWhat would you like to name this timer?");
+    String name = input.nextLine();
+    TimerRequest request = TimerRequest.newBuilder().setName(name).build();
+
+    TimerResponse response;
+    try {
+      response = blockingStub5.start(request);
+      if (response.getIsSuccess()) {
+        System.out.println("Timer " + response.getTimer().getName() + " has been started");
+        System.out.println();
+      } else {
+        System.out.println();
+        System.out.println(response.getError());
+      }
+    } catch (Exception e) {
+      System.err.println("RPC failed: " + e);
+    }
+  }
+
+  public void checkTimer() {
+    Scanner input = new Scanner(System.in);
+    System.out.println("\nPlease enter the name of the timer you would like to check");
+    String name = input.nextLine();
+    TimerRequest request = TimerRequest.newBuilder().setName(name).build();
+
+    TimerResponse response;
+    try {
+      response = blockingStub5.check(request);
+      if (response.getIsSuccess()) {
+        System.out.println(response.getTimer().getSecondsPassed() + " seconds have passed since " +
+                "timer " + response.getTimer().getName() + " was started.");
+        System.out.println();
+      } else {
+        System.out.println();
+        System.out.println(response.getError());
+      }
+    } catch (Exception e) {
+      System.err.println("RPC failed: " + e);
+    }
+  }
+
+  public void stopTimer() {
+    Scanner input = new Scanner(System.in);
+    System.out.println("\nPlease enter the name of the timer you would like to stop");
+    String name = input.nextLine();
+    TimerRequest request = TimerRequest.newBuilder().setName(name).build();
+
+    TimerResponse response;
+    try {
+      response = blockingStub5.close(request);
+      if (response.getIsSuccess()) {
+        System.out.println("Timer " + name + " has been stopped");
+        System.out.println();
+      } else {
+        System.out.println();
+        System.out.println(response.getError());
+      }
+    } catch (Exception e) {
+      System.err.println("RPC failed: " + e);
+    }
+  }
+
+  public void listTimers() {
+    Empty request = Empty.newBuilder().build();
+
+    TimerList response;
+    try {
+      response = blockingStub5.list(request);
+      System.out.println("Here's the list of active timers");
+      System.out.println("--------------------------------");
+      for (Time timer : response.getTimersList()) {
+        System.out.println(timer.getSecondsPassed() + " seconds have passed since " +
+                "timer " + timer.getName() + " was started.");
+      }
+      System.out.println();
+    } catch (Exception e) {
+      System.err.println("RPC failed: " + e);
+    }
+
+  }
+
+  public int timerMenu() {
+    Scanner input = new Scanner(System.in);
+    boolean done = false;
+    int choice = 0;
+    int menuNum = 1;
+    String error = "Please select a valid option";
+
+    do {
+      System.out.println("Please make a selection");
+      System.out.println(menuNum + ". Start a timer!");
+      System.out.println(++menuNum + ". Check a timer!");
+      System.out.println(++menuNum + ". Stop a timer!");
+      System.out.println(++menuNum + ". See all the timers!");
+      System.out.println(++menuNum + ". Return to Services menu!");
+      System.out.println();
+
+      try {
+        choice = input.nextInt();
+        if (choice >= 1 && choice <= menuNum) {
+          done = true;
+
+        } else {
+          System.out.println(error);
+        }
+
+      } catch (InputMismatchException e) {
+        System.out.println(error);
         input = new Scanner(System.in);
       }
     } while (!done);
@@ -298,6 +453,7 @@ public class EchoClient {
               client.startRps();
               break;
             case 3:
+              client.startTimers();
               break;
             case 4:
               System.out.println("BUH BYE");
