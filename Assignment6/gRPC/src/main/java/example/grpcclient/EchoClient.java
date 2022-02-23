@@ -116,71 +116,127 @@ public class EchoClient {
 
   public void startRps() {
     Scanner input = new Scanner(System.in);
+    boolean keepPlaying = true;
 
     System.out.println("Soooo, what's your name?");
     String name = input.nextLine();
+    System.out.println("\nGREETINGS " + name);
 
     do {
-      System.out.println("GREETINGS " + name);
-      System.out.println("WELCOME TO ROCK, PAPER, SCISSORS!!!");
-      System.out.println("CHOOSE YOUR MEANS OF DESTRUCTION!!!");
-      System.out.println("1. ROCK!");
-      System.out.println("2. PAPER!");
-      System.out.println("3. SCISSORS!");
-      System.out.println();
+      int choice = rpsMenu();
 
-      int choice = 0;
       PlayReq.Played weapon = null;
-      try {
-        choice = input.nextInt();
-        switch (choice) {
-          case 1:
-            weapon = PlayReq.Played.ROCK;
-            break;
-          case 2:
-            //request.setPlay(PlayReq.Played.PAPER);
-            weapon = PlayReq.Played.PAPER;
-            break;
-          case 3:
-            //request.setPlay(PlayReq.Played.SCISSORS);
-            weapon = PlayReq.Played.SCISSORS;
-            break;
-          default:
-            System.out.println("YOU FOOL!!!");
-            break;
-        }
-
-        if (choice == 1 || choice == 2 || choice == 3) {
-          PlayReq request = PlayReq.newBuilder()
-                  .setName(name)
-                  .setPlay(weapon)
-                  .build();
-
-          PlayRes response;
-          response = blockingStub4.play(request);
-        }
-
-      } catch (InputMismatchException e) {
-        System.out.println("CHOOSE WISELY!!!");
-        input = new Scanner(System.in);
+      switch (choice) {
+        case 1:
+          weapon = PlayReq.Played.ROCK;
+          break;
+        case 2:
+          weapon = PlayReq.Played.PAPER;
+          break;
+        case 3:
+          weapon = PlayReq.Played.SCISSORS;
+          break;
+        case 4:
+          System.out.println("OKAY!");
+          break;
+        case 5:
+          System.out.println("FAREWELL COWARD!");
+          keepPlaying = false;
+          break;
+        default:
+          System.out.println("CURSES! HOW DID THIS HAPPEN!?");
+          break;
       }
-    } while (true);
 
-    //request needs a name and r, p, or s (called play)
-    //PlayReq request = PlayReq.newBuilder()
+      //PlayReq playreq = null;
+      if (choice == 1 || choice == 2 || choice == 3) {
+        playRequest(name, weapon);
 
+      } else if (choice == 4) {
+        lbRequest();
+      }
+
+
+    } while (keepPlaying);
+  }
+
+  public void playRequest(String name, PlayReq.Played weapon) {
+    PlayReq playreq = PlayReq.newBuilder()
+            .setName(name)
+            .setPlay(weapon)
+            .build();
+
+    PlayRes response;
+    try {
+      response = blockingStub4.play(playreq);
+      if (response.getIsSuccess()) {
+        System.out.println(response.getMessage());
+      } else {
+        System.out.println(response.getError());
+      }
+    } catch (Exception e ) {
+      System.err.println("RPC failed: " + e);
+      return;
+    }
+  }
+
+  public void lbRequest() {
+    Empty lbRequest = Empty.newBuilder().build();
+
+    try {
+      LeaderboardRes lbResponse = blockingStub4.leaderboard(lbRequest);
+
+      if (lbResponse.getIsSuccess()) {
+        System.out.println("LEADERBOARD");
+        System.out.println("-----------");
+        System.out.println("PLAYER --- WINS --- LOSSES");
+        for (LeaderboardEntry entry : lbResponse.getLeaderboardList()) {
+          System.out.println(entry.getName() + " -- " + entry.getWins()
+                  + " -- " + entry.getLost());
+        }
+        System.out.println();
+      } else {
+        System.out.println(lbResponse.getError());
+      }
+
+    } catch (Exception e ) {
+      System.err.println("RPC failed: " + e);
+      return;
+    }
   }
 
   public int rpsMenu() {
+    Scanner input = new Scanner(System.in);
+    boolean done = false;
+    int choice = 0;
+    int menuNum = 1;
+
     do {
-      System.out.println("GREETINGS " + name);
       System.out.println("WELCOME TO ROCK, PAPER, SCISSORS!!!");
       System.out.println("CHOOSE YOUR MEANS OF DESTRUCTION!!!");
-      System.out.println("1. ROCK!");
-      System.out.println("2. PAPER!");
-      System.out.println("3. SCISSORS!");
+      System.out.println(menuNum + ". ROCK!");
+      System.out.println(++menuNum + ". PAPER!");
+      System.out.println(++menuNum + ". SCISSORS!");
+      System.out.println(++menuNum + ". See the leaderboard!");
+      System.out.println(++menuNum + ". FLEE!");
       System.out.println();
-    } while (true);
+
+      try {
+        choice = input.nextInt();
+        if (choice >= 1 && choice <= 5) {
+          done = true;
+
+        } else {
+          System.out.println("CHOOSE WISELY!!!");
+        }
+
+      } catch (InputMismatchException e) {
+        System.out.println("YOU FOOL!!!");
+        input = new Scanner(System.in);
+      }
+    } while (!done);
+
+    return choice;
   }
 
   public static void main(String[] args) throws Exception {
@@ -221,7 +277,7 @@ public class EchoClient {
       EchoClient client = new EchoClient(channel, regChannel);
 
       do {
-        System.out.println("What would you like to do?");
+        System.out.println("\nWhat would you like to do?");
         System.out.println("1. Hear a joke");
         System.out.println("2. Play Rock, Paper, Scissors");
         System.out.println("3. Play with timers");
