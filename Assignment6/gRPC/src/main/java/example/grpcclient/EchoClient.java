@@ -18,6 +18,7 @@ public class EchoClient {
   private final RegistryGrpc.RegistryBlockingStub blockingStub3;
   private final RockPaperScissorsGrpc.RockPaperScissorsBlockingStub blockingStub4;
   private final TimerGrpc.TimerBlockingStub blockingStub5;
+  private final CaesarGrpc.CaesarBlockingStub blockingStub6;
 
   /** Construct client for accessing server using the existing channel. */
   public EchoClient(Channel channel, Channel regChannel) {
@@ -32,6 +33,8 @@ public class EchoClient {
     blockingStub3 = RegistryGrpc.newBlockingStub(regChannel);
     blockingStub4 = RockPaperScissorsGrpc.newBlockingStub(channel);
     blockingStub5 = TimerGrpc.newBlockingStub(channel);
+    blockingStub6 = CaesarGrpc.newBlockingStub(channel);
+
   }
 
   public void askServerToParrot(String message) {
@@ -147,7 +150,6 @@ public class EchoClient {
           break;
       }
 
-      //PlayReq playreq = null;
       if (choice == 1 || choice == 2 || choice == 3) {
         playRequest(name, weapon);
 
@@ -238,7 +240,6 @@ public class EchoClient {
   }
 
   public void startTimers() {
-
     boolean keepGoing = true;
 
     System.out.println("\nHello!");
@@ -268,12 +269,6 @@ public class EchoClient {
           System.out.println("Timer world has been attacked");
           break;
       }
-
-      if (choice == 1 || choice == 2 || choice == 3) {
-
-      }
-
-
     } while (keepGoing);
   }
 
@@ -364,10 +359,11 @@ public class EchoClient {
     Scanner input = new Scanner(System.in);
     boolean done = false;
     int choice = 0;
-    int menuNum = 1;
+
     String error = "Please select a valid option";
 
     do {
+      int menuNum = 1;
       System.out.println("Please make a selection");
       System.out.println(menuNum + ". Start a timer!");
       System.out.println(++menuNum + ". Check a timer!");
@@ -392,6 +388,149 @@ public class EchoClient {
     } while (!done);
 
     return choice;
+  }
+
+  public void startCaesar() {
+    boolean keepGoing = true;
+
+    System.out.println("\nHello!");
+    System.out.println("\nWelcome to Caesar Cipher World");
+
+    do {
+      int choice = caesarMenu();
+
+      switch (choice) {
+        case 1:
+          caesar(true);
+          break;
+        case 2:
+          caesar(false);
+          break;
+        case 3:
+          listCiphers();
+          break;
+        case 4:
+          System.out.println("Goodbye!");
+          keepGoing = false;
+          break;
+        default:
+          System.out.println("Et tu, Brute?");
+          break;
+      }
+    } while (keepGoing);
+  }
+
+  public int caesarMenu() {
+    Scanner input = new Scanner(System.in);
+    boolean done = false;
+    int choice = 0;
+
+    String error = "Please select a valid option";
+
+    do {
+      int menuNum = 1;
+      System.out.println("Please make a selection");
+      System.out.println(menuNum + ". Encrypt a message!");
+      System.out.println(++menuNum + ". Decrypt a message!");
+      System.out.println(++menuNum + ". See all the encrypted messages!");
+      System.out.println(++menuNum + ". Return to Services menu!");
+      System.out.println();
+
+      try {
+        choice = input.nextInt();
+        if (choice >= 1 && choice <= menuNum) {
+          done = true;
+
+        } else {
+          System.out.println(error);
+        }
+
+      } catch (InputMismatchException e) {
+        System.out.println(error);
+        input = new Scanner(System.in);
+      }
+    } while (!done);
+
+    return choice;
+  }
+
+  public void caesar(boolean encrypt) {
+    String option;
+    if (encrypt) {
+      option = "encrypt";
+    } else {
+      option = "decrypt";
+    }
+    System.out.println("Please enter the message you would like to " + option);
+    Scanner input = new Scanner(System.in);
+    String message = input.nextLine();
+    boolean done = false;
+    int key = 0;
+
+    String error = "Positive means more than 0, or 0, but that won't do anything";
+    do {
+      System.out.println();
+      System.out.println("Please enter the encryption key you would like to use.");
+      System.out.println("Positive numbers only PLEASE!");
+
+      try {
+        key = input.nextInt();
+        if (key >= 0) {
+          done = true;
+
+        } else {
+          System.out.println(error);
+        }
+
+      } catch (InputMismatchException e) {
+        System.out.println(error);
+        input = new Scanner(System.in);
+      }
+    } while (!done);
+
+    MessageReq request = MessageReq.newBuilder()
+            .setMessage(message)
+            .setKey(key)
+            .build();
+
+    MessageRes response = null;
+    try {
+      if (encrypt) {
+        response = blockingStub6.encrypt(request);
+      } else {
+        response = blockingStub6.decrypt(request);
+      }
+      if (response.getOk()) {
+        System.out.println(response.getMessage());
+        System.out.println();
+      } else {
+        System.out.println();
+        System.out.println(response.getError());
+      }
+    } catch (Exception e) {
+      System.err.println("RPC failed: " + e);
+    }
+
+    System.out.println("The " + option + "ed message:");
+    System.out.println(response.getMessage());
+    System.out.println();
+  }
+
+  public void listCiphers() {
+    Empty request = Empty.newBuilder().build();
+
+    MessageList response;
+    try {
+      response = blockingStub6.listMessages(request);
+      System.out.println("Here's the list of encrypted messages and their cipher keys");
+      System.out.println("--------------------------------");
+      for (CaesarMessage message : response.getMessageList()) {
+        System.out.println(message.getMessage() + " : " + message.getKey());
+      }
+      System.out.println();
+    } catch (Exception e) {
+      System.err.println("RPC failed: " + e);
+    }
   }
 
   public static void main(String[] args) throws Exception {
@@ -436,7 +575,8 @@ public class EchoClient {
         System.out.println("1. Hear a joke");
         System.out.println("2. Play Rock, Paper, Scissors");
         System.out.println("3. Play with timers");
-        System.out.println("4. Quit");
+        System.out.println("4. Play with a Caesar Cipher");
+        System.out.println("5. Quit");
         System.out.println("Please enter a valid selection.");
         System.out.println();
 
@@ -456,6 +596,9 @@ public class EchoClient {
               client.startTimers();
               break;
             case 4:
+              client.startCaesar();
+              break;
+            case 5:
               System.out.println("BUH BYE");
               System.exit(0);
               break;

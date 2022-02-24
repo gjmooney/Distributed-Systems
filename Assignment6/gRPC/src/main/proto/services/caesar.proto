@@ -1,0 +1,38 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "service";
+option java_outer_classname = "CaesarProto";
+
+package services;
+import "services/story.proto";
+
+service Caesar {
+  rpc encrypt (MessageReq) returns (MessageRes) {}
+  rpc decrypt (MessageReq) returns (MessageRes) {}
+  rpc listMessages (Empty) returns (MessageList) {}
+}
+
+// The request message
+message MessageReq {
+  string message = 1;
+  int32 key = 2;
+}
+
+// The response message
+message MessageRes {
+  bool ok = 1;
+  int32 key = 2;
+  string message = 3;
+  string error = 4;
+}
+
+// Returns a list of Timers
+message MessageList {
+  repeated CaesarMessage message = 1;
+}
+
+message CaesarMessage {
+  string message = 1;
+  int32 key = 2;
+}
