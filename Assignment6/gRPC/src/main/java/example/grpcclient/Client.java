@@ -4,13 +4,11 @@ import io.grpc.Channel;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 
-import java.util.HashSet;
 import java.util.InputMismatchException;
 import java.util.LinkedHashMap;
 import java.util.Scanner;
 import java.util.concurrent.TimeUnit;
 
-import io.grpc.Server;
 import service.*;
 
 /**
@@ -562,12 +560,11 @@ public class Client {
     return channel;
   }
 
-  public void hateStatic(LinkedHashMap<Integer, String> map, int choice) {
+  public void runRegistryNode(LinkedHashMap<Integer, String> map, int choice) {
     String serv = map.get(choice);
     String[] split = serv.split("/");
     SingleServerRes server = findServer(serv);
     Connection conn = server.getConnection();
-    System.out.println("000: " + split[0] + " :1111 " + split[1]);
     if (split[0].equals("services.RockPaperScissors")) {
       blockingStub4 = RockPaperScissorsGrpc.newBlockingStub(createChannel(conn.getUri(), conn.getPort()));
       if (split[1].equals("play")) {
@@ -658,8 +655,7 @@ public class Client {
         try {
           choice = input.nextInt();
           if (choice >=0 && choice < map.size()) {
-            System.out.println("c: " + choice + " : " + map.get(choice));
-            client.hateStatic(map, choice);
+            client.runRegistryNode(map, choice);
           } else if (choice == map.size()) {
             System.out.println("Goodbye");
             System.exit(0);
