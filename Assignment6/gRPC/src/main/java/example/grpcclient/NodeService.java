@@ -14,7 +14,7 @@ import java.util.ArrayList;
 /**
  * Server that manages startup/shutdown of the `Node`.
  */
-public class Node {
+public class NodeService {
   static private Server server;
   int port;
 
@@ -25,7 +25,7 @@ public class Node {
 
   net.Network network = null;
 
-  Node(int port) {
+  NodeService(int port) {
     this.port = port;
     this.network = new net.proto.Network();
   }
@@ -58,7 +58,7 @@ public class Node {
         // hook.
         System.err.println("*** shutting down gRPC server since JVM is shutting down");
         try {
-          Node.this.stop();
+          NodeService.this.stop();
         } catch (InterruptedException e) {
           e.printStackTrace(System.err);
         }
@@ -100,17 +100,17 @@ public class Node {
       System.out.println("[Port] must be an integer");
       System.exit(2);
     }
-    final Node server = new Node(nodePort);
-    //System.out.println(args[0]);
-    //System.out.println(args[1]);
-    //System.out.println(args[2]);
-    //System.out.println(args[3]);
+    final NodeService server = new NodeService(nodePort);
+    System.out.println(args[0]);
+    System.out.println(args[1]);
+    System.out.println(args[2]);
+    System.out.println(args[3]);
 
-    //System.out.println(args[4]);
+    System.out.println(args[4]);
 
     // Comment the next 2 lines for your local client server development (Activity 2 task 1, you need this part again for Task 2)
-    //Register regThread = new Register(args[0], regPort, args[2], nodePort, args[4]);
-    //regThread.start();
+    Register regThread = new Register(args[0], regPort, args[2], nodePort, args[4]);
+    regThread.start();
 
     
     server.start();

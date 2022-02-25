@@ -1,16 +1,19 @@
 package example.grpcclient;
 
 import io.grpc.stub.StreamObserver;
+import org.json.JSONException;
 import org.json.JSONObject;
+import org.json.JSONTokener;
 import service.*;
 
+import java.io.*;
 import java.util.Iterator;
 
 public class CaesarImpl extends CaesarGrpc.CaesarImplBase {
     JSONObject messageList;
 
     public CaesarImpl() {
-        this.messageList = new JSONObject();
+        this.messageList = readMessageList();
     }
 
     public void encrypt(MessageReq req, StreamObserver<MessageRes> responseObserver) {
@@ -25,6 +28,7 @@ public class CaesarImpl extends CaesarGrpc.CaesarImplBase {
                     .setOk(true)
                     .build();
             messageList.put(encrypted, req.getKey());
+            saveMessagesList();
         } catch (Exception e) {
             response = MessageRes.newBuilder()
                     .setOk(false)
@@ -99,5 +103,58 @@ public class CaesarImpl extends CaesarGrpc.CaesarImplBase {
         MessageList response = res.build();
         responseObserver.onNext(response);
         responseObserver.onCompleted();
+    }
+
+    public JSONObject readMessageList() {
+        BufferedReader messageListReader = null;
+        JSONTokener tokener;
+        try {
+            File file = new File("src/main/resources/messages.txt");
+
+            messageListReader = new BufferedReader(new FileReader(file));
+            tokener = new JSONTokener(messageListReader);
+            return new JSONObject(tokener);
+        } catch (FileNotFoundException e) {
+            System.out.println("No messages yet");
+            return new JSONObject();
+        } catch (JSONException e) {
+            System.out.println("Message file is blank");
+            return new JSONObject();
+        }
+        finally {
+            if (messageListReader != null) {
+                try {
+                    messageListReader.close();
+                }
+                catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+
+    public void saveMessagesList() {
+        File file = new File("src/main/resources/messages.txt");
+        FileWriter fileWriter = null;
+        try {
+            if (file.createNewFile()) {
+                System.out.println("New message list created");
+            }
+            fileWriter = new FileWriter("src/main/resources/messages.txt");
+            fileWriter.write(messageList.toString());
+        } catch (IOException e) {
+            e.printStackTrace();
+            System.out.println("Problem saving message list");
+        } finally {
+            try {
+                if (fileWriter != null) {
+                    fileWriter.flush();
+                    fileWriter.close();
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+                System.out.println("problem closing message list");
+            }
+        }
     }
 }

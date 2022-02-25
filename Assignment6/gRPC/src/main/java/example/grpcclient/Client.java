@@ -4,36 +4,41 @@ import io.grpc.Channel;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 
+import java.util.HashSet;
 import java.util.InputMismatchException;
+import java.util.LinkedHashMap;
 import java.util.Scanner;
 import java.util.concurrent.TimeUnit;
+
+import io.grpc.Server;
 import service.*;
 
 /**
  * Client that requests `parrot` method from the `EchoServer`.
  */
-public class EchoClient {
-  private final EchoGrpc.EchoBlockingStub blockingStub;
-  private final JokeGrpc.JokeBlockingStub blockingStub2;
+public class Client {
+  //private EchoGrpc.EchoBlockingStub blockingStub;
+  private JokeGrpc.JokeBlockingStub blockingStub2;
   private final RegistryGrpc.RegistryBlockingStub blockingStub3;
-  private final RockPaperScissorsGrpc.RockPaperScissorsBlockingStub blockingStub4;
-  private final TimerGrpc.TimerBlockingStub blockingStub5;
-  private final CaesarGrpc.CaesarBlockingStub blockingStub6;
+  private RockPaperScissorsGrpc.RockPaperScissorsBlockingStub blockingStub4;
+  private TimerGrpc.TimerBlockingStub blockingStub5;
+  private CaesarGrpc.CaesarBlockingStub blockingStub6;
+  Connection conn;
 
   /** Construct client for accessing server using the existing channel. */
-  public EchoClient(Channel channel, Channel regChannel) {
+  public Client(Channel regChannel) {
     // 'channel' here is a Channel, not a ManagedChannel, so it is not this code's
     // responsibility to
     // shut it down.
 
     // Passing Channels to code makes code easier to test and makes it easier to
     // reuse Channels.
-    blockingStub = EchoGrpc.newBlockingStub(channel);
-    blockingStub2 = JokeGrpc.newBlockingStub(channel);
+    //blockingStub = EchoGrpc.newBlockingStub(channel);
+    //blockingStub2 = JokeGrpc.newBlockingStub(channel);
     blockingStub3 = RegistryGrpc.newBlockingStub(regChannel);
-    blockingStub4 = RockPaperScissorsGrpc.newBlockingStub(channel);
-    blockingStub5 = TimerGrpc.newBlockingStub(channel);
-    blockingStub6 = CaesarGrpc.newBlockingStub(channel);
+    //blockingStub4 = RockPaperScissorsGrpc.newBlockingStub(channel);
+    //blockingStub5 = TimerGrpc.newBlockingStub(channel);
+    //blockingStub6 = CaesarGrpc.newBlockingStub(channel);
 
   }
 
@@ -41,12 +46,12 @@ public class EchoClient {
     ClientRequest request = ClientRequest.newBuilder().setMessage(message).build();
     ServerResponse response;
     try {
-      response = blockingStub.parrot(request);
+      //response = blockingStub.parrot(request);
     } catch (Exception e) {
       System.err.println("RPC failed: " + e.getMessage());
       return;
     }
-    System.out.println("Received from server: " + response.getMessage());
+    //System.out.println("Received from server: " + response.getMessage());
   }
 
   public void askForJokes(int num) {
@@ -54,6 +59,9 @@ public class EchoClient {
     JokeRes response;
 
     try {
+      SingleServerRes serv = findServer("services.Joke/getJoke");
+      Connection conn = serv.getConnection();
+      blockingStub2 = JokeGrpc.newBlockingStub(createChannel(conn.getUri(), conn.getPort()));
       response = blockingStub2.getJoke(request);
     } catch (Exception e) {
       System.err.println("RPC failed: " + e);
@@ -70,36 +78,39 @@ public class EchoClient {
     JokeSetRes response;
 
     try {
+      SingleServerRes serv = findServer("services.Joke/setJoke");
+      Connection conn = serv.getConnection();
+      blockingStub2 = JokeGrpc.newBlockingStub(createChannel(conn.getUri(), conn.getPort()));
       response = blockingStub2.setJoke(request);
-      System.out.println(response.getOk());
     } catch (Exception e) {
       System.err.println("RPC failed: " + e);
       return;
     }
   }
 
-  public void getServices() {
+  public LinkedHashMap<Integer, String> getServices() {
     GetServicesReq request = GetServicesReq.newBuilder().build();
     ServicesListRes response;
     try {
       response = blockingStub3.getServices(request);
-      System.out.println(response.toString());
+      LinkedHashMap<Integer, String> map = new LinkedHashMap<>();
+      System.out.println(response);
+      for (int i = 0; i < response.getServicesList().size(); i++) {
+        map.put(i, response.getServices(i));
+      }
+      return map;
     } catch (Exception e) {
       System.err.println("RPC failed: " + e);
-      return;
+      return null;
     }
   }
 
-  public void findServer(String name) {
+  public SingleServerRes findServer(String name) {
     FindServerReq request = FindServerReq.newBuilder().setServiceName(name).build();
     SingleServerRes response;
-    try {
-      response = blockingStub3.findServer(request);
-      System.out.println(response.toString());
-    } catch (Exception e) {
-      System.err.println("RPC failed: " + e);
-      return;
-    }
+    response = blockingStub3.findServer(request);
+    System.out.println(response.toString());
+    return response;
   }
 
   public void findServers(String name) {
@@ -169,6 +180,10 @@ public class EchoClient {
 
     PlayRes response;
     try {
+      /*SingleServerRes serv = findServer("services.RockPaperScissors/play");
+      Connection conn = serv.getConnection();
+      blockingStub4 = RockPaperScissorsGrpc.newBlockingStub(createChannel(conn.getUri(), conn.getPort()));
+      */
       response = blockingStub4.play(playreq);
       if (response.getIsSuccess()) {
         System.out.println(response.getMessage());
@@ -185,6 +200,10 @@ public class EchoClient {
     Empty lbRequest = Empty.newBuilder().build();
 
     try {
+      /*SingleServerRes serv = findServer("services.RockPaperScissors/leaderboard");
+      Connection conn = serv.getConnection();
+      blockingStub4 = RockPaperScissorsGrpc.newBlockingStub(createChannel(conn.getUri(), conn.getPort()));
+      */
       LeaderboardRes lbResponse = blockingStub4.leaderboard(lbRequest);
 
       if (lbResponse.getIsSuccess()) {
@@ -250,13 +269,13 @@ public class EchoClient {
 
       switch (choice) {
         case 1:
-          startTimer(false);
+          startTimer();
           break;
         case 2:
-          checkTimer(false);
+          checkTimer();
           break;
         case 3:
-          stopTimer(false);
+          stopTimer();
           break;
         case 4:
           listTimers();
@@ -272,16 +291,10 @@ public class EchoClient {
     } while (keepGoing);
   }
 
-  public void startTimer(boolean auto) {
-    String name;
-    if (auto) {
-      name = "testTimer";
-    } else {
-      Scanner input = new Scanner(System.in);
-      System.out.println("\nWhat would you like to name this timer?");
-      name = input.nextLine();
-    }
-
+  public void startTimer() {
+    Scanner input = new Scanner(System.in);
+    System.out.println("\nWhat would you like to name this timer?");
+    String name = input.nextLine();
     TimerRequest request = TimerRequest.newBuilder().setName(name).build();
 
     TimerResponse response;
@@ -299,16 +312,10 @@ public class EchoClient {
     }
   }
 
-  public void checkTimer(boolean auto) {
-    String name;
-    if (auto) {
-      name = "testTimer";
-    } else {
-      Scanner input = new Scanner(System.in);
-      System.out.println("\nPlease enter the name of the timer you would like to check");
-      name = input.nextLine();
-    }
-
+  public void checkTimer() {
+    Scanner input = new Scanner(System.in);
+    System.out.println("\nPlease enter the name of the timer you would like to check");
+    String name = input.nextLine();
     TimerRequest request = TimerRequest.newBuilder().setName(name).build();
 
     TimerResponse response;
@@ -327,15 +334,10 @@ public class EchoClient {
     }
   }
 
-  public void stopTimer(boolean auto) {
-    String name;
-    if (auto) {
-      name = "testTimer";
-    } else {
-      Scanner input = new Scanner(System.in);
-      System.out.println("\nPlease enter the name of the timer you would like to stop");
-      name = input.nextLine();
-    }
+  public void stopTimer() {
+    Scanner input = new Scanner(System.in);
+    System.out.println("\nPlease enter the name of the timer you would like to stop");
+    String name = input.nextLine();
     TimerRequest request = TimerRequest.newBuilder().setName(name).build();
 
     TimerResponse response;
@@ -418,10 +420,10 @@ public class EchoClient {
 
       switch (choice) {
         case 1:
-          caesar(true, false);
+          caesar(true);
           break;
         case 2:
-          caesar(false, false);
+          caesar(false);
           break;
         case 3:
           listCiphers();
@@ -471,50 +473,39 @@ public class EchoClient {
     return choice;
   }
 
-  public void caesar(boolean encrypt, boolean auto) {
+  public void caesar(boolean encrypt) {
     String option;
-    String message;
-    String error = "Positive means more than 0, or 0, but that won't do anything";
-    boolean done = false;
-    int key = 0;
-
     if (encrypt) {
       option = "encrypt";
     } else {
       option = "decrypt";
     }
+    System.out.println("Please enter the message you would like to " + option);
+    Scanner input = new Scanner(System.in);
+    String message = input.nextLine();
+    boolean done = false;
+    int key = 0;
 
-    if (!auto) {
-      System.out.println("Please enter the message you would like to " + option);
-      Scanner input = new Scanner(System.in);
-      message = input.nextLine();
-      do {
-        System.out.println();
-        System.out.println("Please enter the encryption key you would like to use.");
-        System.out.println("Positive numbers only PLEASE!");
+    String error = "Positive means more than 0, or 0, but that won't do anything";
+    do {
+      System.out.println();
+      System.out.println("Please enter the encryption key you would like to use.");
+      System.out.println("Positive numbers only PLEASE!");
 
-        try {
-          key = input.nextInt();
-          if (key >= 0) {
-            done = true;
+      try {
+        key = input.nextInt();
+        if (key >= 0) {
+          done = true;
 
-          } else {
-            System.out.println(error);
-          }
-
-        } catch (InputMismatchException e) {
+        } else {
           System.out.println(error);
-          input = new Scanner(System.in);
         }
-      } while (!done);
-    } else {
-      if (encrypt) {
-        message = "This is a test phrase";
-      } else {
-        message = "Xlmw mw e xiwx tlvewi";
+
+      } catch (InputMismatchException e) {
+        System.out.println(error);
+        input = new Scanner(System.in);
       }
-      key = 4;
-    }
+    } while (!done);
 
     MessageReq request = MessageReq.newBuilder()
             .setMessage(message)
@@ -539,6 +530,8 @@ public class EchoClient {
     } catch (Exception e) {
       System.err.println("RPC failed: " + e);
     }
+
+
   }
 
   public void listCiphers() {
@@ -558,51 +551,76 @@ public class EchoClient {
     }
   }
 
-  public void autoPilot() {
-    System.out.println("ROCK PAPER SCISSORS");
-    System.out.println("----------");
-    System.out.println("Auto: Playing rock");
-    playRequest("tester", PlayReq.Played.ROCK);
-    System.out.println("Auto: Playing paper");
-    playRequest("tester", PlayReq.Played.PAPER);
-    System.out.println("Auto: Playing scissors");
-    playRequest("tester", PlayReq.Played.SCISSORS);
-    System.out.println("Auto: RPS Leaderboard");
-    leaderboardRequest();
-    System.out.println("TIMER TIME");
-    System.out.println("----------");
-    System.out.println("Auto: Creating Timer");
-    startTimer(true);
-    try {
-      Thread.sleep(1000);
-      System.out.println("Auto: Checking Timer");
-      checkTimer(true);
-      Thread.sleep(1000);
-    } catch (InterruptedException e) {
-      System.out.println("Problem sleeping");
+  public ManagedChannel createChannel(String host, int port) {
+    String target = host + ":" + port;
+    ManagedChannel channel = ManagedChannelBuilder.forTarget(target)
+            // Channels are secure by default (via SSL/TLS). For the example we disable TLS
+            // to avoid
+            // needing certificates.
+            .usePlaintext().build();
+
+    return channel;
+  }
+
+  public void hateStatic(LinkedHashMap<Integer, String> map, int choice) {
+    String serv = map.get(choice);
+    String[] split = serv.split("/");
+    SingleServerRes server = findServer(serv);
+    Connection conn = server.getConnection();
+    System.out.println("000: " + split[0] + " :1111 " + split[1]);
+    if (split[0].equals("services.RockPaperScissors")) {
+      blockingStub4 = RockPaperScissorsGrpc.newBlockingStub(createChannel(conn.getUri(), conn.getPort()));
+      if (split[1].equals("play")) {
+        startRps();
+      } else if (split[1].equals("leaderboard")) {
+        leaderboardRequest();
+      }
+
+    } else if (split[0].equals("services.Timer")) {
+      blockingStub5 = TimerGrpc.newBlockingStub(createChannel(conn.getUri(), conn.getPort()));
+      if (split[1].equals("check")) {
+        checkTimer();
+      } else if (split[1].equals("list")) {
+        listTimers();
+      } else if (split[1].equals("start")) {
+        startTimer();
+      } else if (split[1].equals("close")) {
+        stopTimer();
+      }
+
+    } else if (split[0].equals("services.Caesar")) {
+      blockingStub6 = CaesarGrpc.newBlockingStub(createChannel(conn.getUri(), conn.getPort()));
+      if (split[1].equals("encrypt")) {
+        caesar(true);
+      } else if (split[1].equals("decrypt")) {
+        caesar(false);
+      } else if (split[1].equals("listMessages")) {
+        listCiphers();
+      }
+    } else if (split[0].equals("services.Registry")) {
+      if (split[1].equals("getServices")) {
+        getServices();
+      } else if (split[1].equals("findServer")) {
+        System.out.println("enter what you want to find");
+        Scanner in = new Scanner(System.in);
+        String input = in.nextLine();
+        findServer(input);
+      } else if (split[1].equals("findServers")) {
+        System.out.println("enter what you want to find");
+        Scanner in = new Scanner(System.in);
+        String input = in.nextLine();
+        findServers(input);
+      } else if (split[1].equals("register")) {
+        System.out.println("This one isn't real");
+      }
     }
-    System.out.println("Auto: Listing Timers");
-    listTimers();
-    System.out.println("Auto: Stopping Timer");
-    stopTimer(true);
-    System.out.println("Auto: Listing timers again");
-    listTimers();
-    System.out.println("CAESAR TIME");
-    System.out.println("----------");
-    System.out.println("Auto: Encrypting message");
-    caesar(true, true);
-    System.out.println("Auto: Decrypting message");
-    caesar(false, true);
-    System.out.println("Auto: Listing encrypted messages");
-    listCiphers();
-    System.exit(0);
+
   }
 
   public static void main(String[] args) throws Exception {
-    if (args.length != 6) {
+    if (args.length != 5) {
       System.out
-          .println("Expected arguments: <host(String)> <port(int)> " +
-                  "<regHost(string)> <regPort(int)> <message(String)> <auto(int)>");
+          .println("Expected arguments: <host(String)> <port(int)> <regHost(string)> <regPort(int)> <message(String)>");
       System.exit(1);
     }
     int port = 9099;
@@ -610,76 +628,48 @@ public class EchoClient {
     String host = args[0];
     String regHost = args[2];
     String message = args[4];
-    int auto = 0;
     try {
       port = Integer.parseInt(args[1]);
       regPort = Integer.parseInt(args[3]);
-      auto = Integer.parseInt(args[5]);
     } catch (NumberFormatException nfe) {
       System.out.println("[Port] must be an integer");
       System.exit(2);
     }
-
-    // Create a communication channel to the server, known as a Channel. Channels
-    // are thread-safe
-    // and reusable. It is common to create channels at the beginning of your
-    // application and reuse
-    // them until the application shuts down.
-    String target = host + ":" + port;
-    ManagedChannel channel = ManagedChannelBuilder.forTarget(target)
-        // Channels are secure by default (via SSL/TLS). For the example we disable TLS
-        // to avoid
-        // needing certificates.
-        .usePlaintext().build();
-
+    System.out.println("TEST " + regHost + regPort);
     String regTarget = regHost + ":" + regPort;
     ManagedChannel regChannel = ManagedChannelBuilder.forTarget(regTarget).usePlaintext().build();
-
     try {
 
-      EchoClient client = new EchoClient(channel, regChannel);
-      if (auto == 1) {
-        client.autoPilot();
-      }
+      Client client = new Client(regChannel);
+
+      LinkedHashMap<Integer, String> map = client.getServices();
 
       do {
-        System.out.println("\nWhat would you like to do?");
-        System.out.println("1. Hear a joke");
-        System.out.println("2. Play Rock, Paper, Scissors");
-        System.out.println("3. Play with timers");
-        System.out.println("4. Play with a Caesar Cipher");
-        System.out.println("5. Quit");
-        System.out.println("Please enter a valid selection.");
+
+        System.out.println("Which service would you like to use??");
         System.out.println();
+        for (int i = 0; i < map.size(); i++) {
+          System.out.println(i + ": " + map.get(i));
+        }
+        System.out.println(map.size() + ": Quit");
 
         Scanner input = new Scanner(System.in);
-        int choice = 0;
+        int choice;
         try {
           choice = input.nextInt();
-
-          switch (choice) {
-            case 1:
-              client.askForJokes(1);
-              break;
-            case 2:
-              client.startRps();
-              break;
-            case 3:
-              client.startTimers();
-              break;
-            case 4:
-              client.startCaesar();
-              break;
-            case 5:
-              System.out.println("BUH BYE");
-              System.exit(0);
-              break;
-            default:
-              System.out.println("The switch broke");
-              break;
+          if (choice >=0 && choice < map.size()) {
+            System.out.println("c: " + choice + " : " + map.get(choice));
+            client.hateStatic(map, choice);
+          } else if (choice == map.size()) {
+            System.out.println("Goodbye");
+            System.exit(0);
+          } else {
+            System.out.println();
+            System.out.println("Please enter a valid choice");
           }
+
         } catch (InputMismatchException e) {
-          input = new Scanner(System.in);
+          System.out.println();
           System.out.println("Please enter a valid choice");
         }
       } while (true);
@@ -690,7 +680,7 @@ public class EchoClient {
       // resources the channel should be shut down when it will no longer be used. If
       // it may be used
       // again leave it running.
-      channel.shutdownNow().awaitTermination(5, TimeUnit.SECONDS);
+      //channel.shutdownNow().awaitTermination(5, TimeUnit.SECONDS);
       regChannel.shutdownNow().awaitTermination(5, TimeUnit.SECONDS);
     }
   }

@@ -1,27 +1,45 @@
-# GRPC Services and Registry
+# Assignment 6
 
-The following folder contains a Registry.jar which includes a Registering service where Nodes can register to allow clients to find them and use their implemented GRPC services. 
+### Screencast
 
-Some more detailed explanations will follow and please also check the build.gradle file
+### Description
+This program utilizes GRPC to allow a client and node to communicate. The node hosts a variety of services that the client can use. The client provides a console based menu that the user can use to invoke the services. 
 
-Before starting do a "gradle generateProto".
+### Running the programs
+#### Task 1 
+gradle runNode  
+gradle runClient -q --console=plain  
 
-### gradle runRegistryServer
-Will run the Registry node on localhost (arguments are possible see gradle). This node will run and allows nodes to register themselves. 
+Run using default values  
+Client provides a menu interface to interact with services and will prompt the user for needed input.  
 
-The Server allows Protobuf, JSON and gRPC. We will only be using gRPC
+For auto-mode: Run client with  
+gradle runClient -Pauto=1 -q --console=plain  
 
-### gradle runNode
-Will run a node with an Echo and Joke service. The node registers itself on the Registry. You can change the host and port the node runs on and this will register accordingly with the Registry
+Auto mode will run through all implemented services and exit upon completion
 
-### gradle runClientJava
-Will run a client which will call the services from the node, it talks to the node directly not through the registry. At the end the client does some calls to the Registry to pull the services, this will be needed later.
-
-### gradle runDiscovery
-Will create a couple of threads with each running a node with services in JSON and Protobuf. This is just an example and not needed for assignment 6. 
-
-### gradle testProtobufRegistration
-Registers the protobuf nodes from runDiscovery and do some calls. 
-
-### gradle testJSONRegistration
-Registers the json nodes from runDiscovery and do some calls. 
+### Requirements
+    #### Task 1
+    - Client and node run via Gradle using default arguments
+    - Rock, Paper, Scissors and Timer services implemented using GRPC
+    - Client provides user with easy to use interface, showing available services and prompts to enter relevant data 
+    - Can use gradle argument to set port and host used
+    - Can use gradle argument to run in auto mode, calling all services with pre-defined input
+    - Server and Client are robust
+    #### Task 2
+    - Created a new service that implements a simple Caesar Cipher
+    - Created .proto file 
+    - Service allows 3 requests - encrypt, decrypt, and list encrypted messages
+    - Two of the requests require input - Phrase to be encrypted, and an offset to use for encryption
+    - Requests return different data - encryted phrase, decrypted phrase, and a list of encrypted pahrses with hteir offset
+    - Third request returns a repeated field
+    - Saved data is persistent
+    #### Task 3
+    - Created new version of client and node that use the registry
+    - New versions run through gradle
+    - Node registers services with registry
+    - Client contacts registry and print a list of available services
+    - User can select one using a number as input
+    - Client contacts registry and finds the server running the service
+    - Client uses that server to process request
+    

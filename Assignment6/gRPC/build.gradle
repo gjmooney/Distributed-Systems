@@ -60,13 +60,15 @@ sourceSets {
  // port and host of a service node
  def servicePort = 8000; // port for the service node
  def serviceHost = 'localhost'; // host for the service node
- def nodeName = "test" // Name of node to be registered
+ def nodeName = "gjmooney" // Name of node to be registered
 
  // for json and protobuf: port where service can be found (getService method)
  def discoveryPort = 10000 // port where the node runs a registry thread for the registry to call getSerices
 
  // Method to Echo in client
  def message = "Hello you" // for the echo service in the node
+ 
+ def auto = 0
 
  
 
@@ -98,6 +100,9 @@ task arguments {
     }
     if (project.hasProperty("serviceHost")) {
       serviceHost = project.getProperty("serviceHost")
+    }
+    if (project.hasProperty("auto")) {
+        auto = project.getProperty("auto")
     }
 }
 
@@ -140,7 +145,7 @@ task testProtobufRegistration(type: JavaExec) {
 // ####### Client Server example with grpc
 
 // runs a client which will run some commands on a node and also on the registration node
-task runClientJava(type: JavaExec) {
+task runClient(type: JavaExec) {
   dependsOn arguments
   classpath = sourceSets.main.runtimeClasspath
   description = "Run Client"
@@ -152,6 +157,7 @@ task runClientJava(type: JavaExec) {
   args registryHost
   args grpcPort
   args message 
+  args auto
 }
 
 // runs a service node which already has the echo and joke service included
@@ -160,6 +166,34 @@ task runNode(type: JavaExec) {
   classpath = sourceSets.main.runtimeClasspath
   description = "Run Server"
   main = 'example.grpcclient.Node'
+  // default args
+  args registryHost
+  args grpcPort
+  args serviceHost
+  args servicePort
+  args nodeName
+}
+
+// Task 3 stuff
+task runClient2(type: JavaExec) {
+  dependsOn arguments
+  classpath = sourceSets.main.runtimeClasspath
+  description = "Run Client"
+  main = 'example.grpcclient.Client'
+  standardInput = System.in
+  // default args
+  args serviceHost 
+  args servicePort
+  args registryHost
+  args grpcPort
+  args message 
+}
+
+task registerServiceNode(type: JavaExec) {
+  dependsOn arguments
+  classpath = sourceSets.main.runtimeClasspath
+  description = "Run Server"
+  main = 'example.grpcclient.NodeService'
   // default args
   args registryHost
   args grpcPort
