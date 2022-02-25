@@ -29,27 +29,27 @@ gradle registerServiceNode
 gradle runClient2 -q --console=plain  
 
 ### Requirements
-    #### Task 1
-    - Client and node run via Gradle using default arguments
-    - Rock, Paper, Scissors and Timer services implemented using GRPC
-    - Client provides user with easy to use interface, showing available services and prompts to enter relevant data 
-    - Can use gradle argument to set port and host used
-    - Can use gradle argument to run in auto mode, calling all services with pre-defined input
-    - Server and Client are robust
-    #### Task 2
-    - Created a new service that implements a simple Caesar Cipher
-    - Created .proto file 
-    - Service allows 3 requests - encrypt, decrypt, and list encrypted messages
-    - Two of the requests require input - Phrase to be encrypted, and an offset to use for encryption
-    - Requests return different data - encrypted phrase, decrypted phrase, and a list of encrypted phrases with their offset
-    - Third request returns a repeated field
-    - Saved data is persistent
-    #### Task 3
-    - Created new version of client and node that use the registry
-    - New versions run through gradle
-    - Node registers services with registry
-    - Client contacts registry and print a list of available services
-    - User can select one using a number as input
-    - Client contacts registry and finds the server running the service
-    - Client uses that server to process request
+#### Task 1
+- Client and node run via Gradle using default arguments
+- Rock, Paper, Scissors and Timer services implemented using GRPC
+- Client provides user with easy to use interface, showing available services and prompts to enter relevant data 
+- Can use gradle argument to set port and host used
+- Can use gradle argument to run in auto mode, calling all services with pre-defined input
+- Server and Client are robust
+#### Task 2
+- Created a new service that implements a simple Caesar Cipher
+- Created .proto file 
+- Service allows 3 requests - encrypt, decrypt, and list encrypted messages
+- Two of the requests require input - Phrase to be encrypted, and an offset to use for encryption
+- Requests return different data - encrypted phrase, decrypted phrase, and a list of encrypted phrases with their offset
+- Third request returns a repeated field
+- Saved data is persistent
+#### Task 3
+- Created new version of client and node that use the registry
+- New versions run through gradle
+- Node registers services with registry
+- Client contacts registry and print a list of available services
+- User can select one using a number as input
+- Client contacts registry and finds the server running the service
+- Client uses that server to process request
     
