@@ -632,7 +632,6 @@ public class Client {
       System.out.println("[Port] must be an integer");
       System.exit(2);
     }
-    System.out.println("TEST " + regHost + regPort);
     String regTarget = regHost + ":" + regPort;
     ManagedChannel regChannel = ManagedChannelBuilder.forTarget(regTarget).usePlaintext().build();
     try {
