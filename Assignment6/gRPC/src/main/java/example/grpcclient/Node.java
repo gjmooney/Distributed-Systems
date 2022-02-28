@@ -36,7 +36,7 @@ public class Node {
     ArrayList<String> services = new ArrayList<>();
     server = ServerBuilder.forPort(port)
         //.addService(new EchoImpl())
-        //.addService(new JokeImpl())
+        .addService(new JokeImpl())
         .addService(new RockPaperScissorImpl())
         .addService(new TimerImpl())
         .addService(new CaesarImpl())
