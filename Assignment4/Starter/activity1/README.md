@@ -4,9 +4,9 @@
 https://youtu.be/Fin5kc6wXQE  
 
 ### Description
-This program consists of three server options and a client. The client can perform some simple string manipulation functiosn. It can add a srtring to the lsit, pop the top element of the lsit, display the current list count the number of slements in the lists, and switch two elements in hte list.  
+This program consists of three server options and a client. The client can perform some simple string manipulation functions. It can add a string to the list, pop the top element of the list, display the current list, count the number of elements in the lists, and switch two elements in the list.  
 The list is maintained on the server.   
-The server is available in three varietes. HTe first (Task 1) is single thhreaded, the second (Task 2) is multi threaded and allows an unbounded nmumber of clietns to connect, the thitrd (Task 3) utilizes a thread pool and limits how mnay clients can be connected at once. The amount of threads can be defined by passing a parameter when startign it. 
+The server is available in three varietes. The first (Task 1) is single thhreaded, the second (Task 2) is multi threaded and allows an unbounded number of clients to connect, the third (Task 3) utilizes a thread pool and limits how mnay clients can be connected at once. The amount of threads can be defined by passing a parameter when starting it. 
 
 ### Running the project
 The servers can be started with default options by using the command  
